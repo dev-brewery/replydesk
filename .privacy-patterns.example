@@ -1,0 +1,13 @@
+# Copy to .privacy-patterns (gitignored) and fill with real values.
+# One case-insensitive extended regex per line. Keep it current.
+# place names
+your-town
+your-street
+# coordinates (2-4 decimals, both signs)
+12\.34[0-9]*
+-?56\.78[0-9]*
+# LAN addresses / hostnames
+192\.168\.
+your-server-hostname
+# timezone, if it narrows your location
+America/Your_City

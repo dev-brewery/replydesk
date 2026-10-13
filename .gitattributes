@@ -1,0 +1,14 @@
+# Week 1: CRLF conversion stripped bytes from committed PNGs. Never again.
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.webp binary
+*.ico  binary
+*.pdf  binary
+*.mp4  binary
+*.bsp  binary
+
+# Shell scripts and git hooks must stay LF or sh refuses them on checkout.
+hooks/* text eol=lf
+*.sh    text eol=lf

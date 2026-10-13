@@ -1,0 +1,14 @@
+#!/bin/sh
+# Privacy guard for commit messages (Week 1 leaked a location via a commit subject).
+patterns=".privacy-patterns"
+[ -s "$patterns" ] || { echo "privacy guard: $patterns missing - refusing to commit." >&2; exit 1; }
+active=$(mktemp)
+grep -v '^[[:space:]]*#' "$patterns" | grep -v '^[[:space:]]*$' > "$active"
+hits=$(grep -v '^#' "$1" | grep -n -i -E -f "$active")
+rm -f "$active"
+if [ -n "$hits" ]; then
+  echo "privacy guard: commit message matches .privacy-patterns - commit blocked." >&2
+  echo "$hits" >&2
+  exit 1
+fi
+exit 0

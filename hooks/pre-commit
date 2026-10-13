@@ -1,0 +1,26 @@
+#!/bin/sh
+# Privacy guard: block commits whose added lines or new file paths match any
+# pattern in .privacy-patterns (gitignored, one extended regex per line, # comments).
+# Install once per repo:  git config core.hooksPath hooks
+patterns=".privacy-patterns"
+if [ ! -s "$patterns" ]; then
+  echo "privacy guard: $patterns missing or empty - refusing to commit." >&2
+  echo "  copy it from the kit (it is gitignored) before committing." >&2
+  exit 1
+fi
+active=$(mktemp)
+grep -v '^[[:space:]]*#' "$patterns" | grep -v '^[[:space:]]*$' > "$active"
+
+hits=$( {
+  git diff --cached --name-only --diff-filter=ACMR
+  git diff --cached -U0 --no-color --text | grep '^+' | grep -v '^+++'
+} | grep -n -i -E -f "$active" )
+rm -f "$active"
+
+if [ -n "$hits" ]; then
+  echo "privacy guard: staged changes match .privacy-patterns - commit blocked." >&2
+  echo "$hits" | cut -c1-160 >&2
+  echo "Remove the matches. Do not bypass with --no-verify." >&2
+  exit 1
+fi
+exit 0
