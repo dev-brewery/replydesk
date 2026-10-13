@@ -11,7 +11,9 @@ import json
 from datetime import date
 from pathlib import Path
 
-from ..model import BusinessProfile, Review, ToneGuide
+from ..draft import run as _run
+from ..llm import FixtureLLM
+from ..model import BusinessProfile, Review, RunResult, ToneGuide
 
 FIXTURE_DATE = date(2026, 10, 12)  # pinned; all fixture review dates <= this
 
@@ -114,3 +116,14 @@ def load_demo_fixtures(demo_dir) -> tuple[BusinessProfile, ToneGuide, list[Revie
 
     tone_guide = ToneGuide(voice=tone_text, facts=())
     return profile, tone_guide, reviews, canned
+
+
+def demo_run() -> RunResult:
+    """Full offline pipeline over the committed demo fixture set.
+
+    Canned drafts (including `assist:` entries) ride a FixtureLLM; the run is
+    stamped with the pinned FIXTURE_DATE so output stays byte-deterministic.
+    """
+    demo_dir = Path(__file__).resolve().parent / "demo"
+    profile, tone_guide, reviews, canned = load_demo_fixtures(demo_dir)
+    return _run(tone_guide, profile, reviews, FixtureLLM(canned), today=FIXTURE_DATE)

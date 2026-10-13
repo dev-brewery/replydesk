@@ -47,6 +47,49 @@ _RETRY_NOTE = (
     "Rewrite without them."
 )
 
+TRIAGE_ASSIST_SYSTEM = (
+    "You triage customer reviews for a small business owner. Classify the review as "
+    "either genuine thanks or a problem worth a substantive reply. Answer with exactly "
+    "one line in the form 'category|reason', where category is 'thank-you' or 'fix-it' "
+    "and the reason is one short clause. Use 'fix-it' whenever the review describes "
+    "anything that went wrong or fell short."
+)
+
+
+def _consult_assist(client, decisions: list[TriageDecision]) -> list[TriageDecision]:
+    """§5 triage assist: consult once per deterministic THANK_YOU decision.
+
+    Only a well-formed 'fix-it|reason' flips (one-way, toward the cautious
+    category). Malformed output or an LLMError leaves the deterministic
+    decision unchanged; the assist never blocks or drafts.
+    """
+    adjusted: list[TriageDecision] = []
+    for decision in decisions:
+        if decision.category is not TriageCategory.THANK_YOU:
+            adjusted.append(decision)
+            continue
+        try:
+            output = client.complete(
+                TRIAGE_ASSIST_SYSTEM,
+                decision.review.text,
+                key=f"assist:{decision.review.review_id}",
+                max_tokens=100,
+            )
+        except LLMError:
+            adjusted.append(decision)
+            continue
+        lines = output.strip().splitlines()
+        category, sep, reason = (lines[0] if lines else "").partition("|")
+        if sep and reason.strip() and category.strip().lower() == "fix-it":
+            adjusted.append(TriageDecision(
+                review=decision.review,
+                category=TriageCategory.FIX_IT,
+                reason=f"triage assist flip: {reason.strip()}",
+            ))
+        else:
+            adjusted.append(decision)
+    return adjusted
+
 
 def _system_prompt(tone_guide: ToneGuide, profile: BusinessProfile) -> str:
     return _SYSTEM_TEMPLATE.format(
@@ -120,7 +163,7 @@ def run(
     today: date,
 ) -> RunResult:
     """Triage, then draft with verify -> one retry -> labeled fallback."""
-    decisions = triage_all(reviews)
+    decisions = _consult_assist(client, triage_all(reviews))
     system = _system_prompt(tone_guide, profile)
     drafts: list[DraftResult] = []
 

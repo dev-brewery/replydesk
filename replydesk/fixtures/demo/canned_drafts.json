@@ -1,0 +1,13 @@
+{
+  "ty-1": "Thank you for the kind words. We are glad the faucet repair went smoothly and that the kitchen was left spotless. Friendly people and a fair price are what we aim for at Ridgeline Plumbing in Cedar Falls.",
+  "ty-2": "We are sorry the water heater swap needed a second visit. You are right to expect the job finished the first time. Your two-year workmanship warranty covers this repair, and we'll come back to check the fittings at no charge. Call us any morning and we'll make it right.",
+  "ty-3": "Thank you for noticing the care the crew takes. The boot covers and the walk-through of the shutoff valve show how the crew works. We are glad the visit went well.",
+  "fx-1": "We are sorry the visit started late and felt rushed. That is not the standard we hold at Ridgeline Plumbing in Cedar Falls. The repair is covered by our two-year workmanship warranty, and estimates are always free before any follow-up work. Call us and we'll set a time that works.",
+  "fx-2": "We are sorry about the wrong part and the leak that followed. You should not be left with a broken tap and a wet cabinet. The two-year workmanship warranty covers putting this right, and we'll come back to fix it at no charge. Call us between seven and five on a weekday and we'll get you on the schedule.",
+  "fx-3": "We are sorry the crew left the basement dirty. The cleanup is part of the job at Ridgeline Plumbing, and that part failed here. We'll come back to make it right, and the visit is covered by our two-year workmanship warranty. Call us and we'll set it up.",
+  "human-legal": "We are sorry. A person at Ridgeline Plumbing in Cedar Falls will look into what happened with the failed fitting and reach out directly.",
+  "human-refund": "We are sorry about the double charge on the service call. A person at Ridgeline Plumbing will review the billing and reach out directly.",
+  "assist:ty-1": "thank-you|genuine praise with no problem described",
+  "assist:ty-2": "fix-it|notes a second visit was needed to finish the job, so it deserves a fix-it response",
+  "assist:ty-3": "thank-you|straightforward praise, nothing to fix"
+}

@@ -1,0 +1,50 @@
+[
+  {
+    "review_id": "ty-1",
+    "stars": 5,
+    "date": "2026-10-04",
+    "text": "Friendly people from the first call to the final check. They fixed a dripping faucet the same week I reached out and left the kitchen spotless."
+  },
+  {
+    "review_id": "ty-2",
+    "stars": 4,
+    "date": "2026-09-30",
+    "text": "They had to come back a second time to finish the water heater swap, but everything works now."
+  },
+  {
+    "review_id": "ty-3",
+    "stars": 5,
+    "date": "2026-09-22",
+    "text": "Showed up on time, wore covers over their boots, and walked me through the shutoff valve before leaving. You can tell the crew takes pride in the work."
+  },
+  {
+    "review_id": "fx-1",
+    "stars": 2,
+    "date": "2026-10-11",
+    "text": "The plumber showed up almost an hour late and then rushed the install. Not what I paid for."
+  },
+  {
+    "review_id": "fx-2",
+    "stars": 1,
+    "date": "2026-10-08",
+    "text": "Wrong part put on the first visit, and by nightfall the new valve was leaking and the cabinet floor was a mess. Now the tap is broken too."
+  },
+  {
+    "review_id": "fx-3",
+    "stars": 3,
+    "date": "2026-09-27",
+    "text": "Crew left the basement dirty with dust everywhere and nobody came back to sweep it. Disappointing cleanup after a big job."
+  },
+  {
+    "review_id": "human-legal",
+    "stars": 2,
+    "date": "2026-10-06",
+    "text": "This is not getting resolved with another apology. My lawyer will be in touch about the damage from the failed fitting."
+  },
+  {
+    "review_id": "human-refund",
+    "stars": 1,
+    "date": "2026-10-12",
+    "text": "I was charged twice for the same service call, and I want a full refund today."
+  }
+]

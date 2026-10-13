@@ -80,8 +80,10 @@ class TestRun(unittest.TestCase):
         self.assertEqual(draft.verifier_notes, ())
         self.assertEqual(draft.text, GOOD_THANKS)
         self.assertEqual(result.generated_on, TODAY)
-        self.assertEqual(client.calls[0]["max_tokens"], 400)
-        self.assertEqual(client.calls[0]["key"], "r-good")
+        self.assertEqual(client.calls[0]["max_tokens"], 100)  # assist consult first
+        self.assertEqual(client.calls[0]["key"], "assist:r-good")
+        self.assertEqual(client.calls[1]["max_tokens"], 400)
+        self.assertEqual(client.calls[1]["key"], "r-good")
 
     def test_bad_then_good_retry(self):
         client = StubClient({"r-bad": [BAD_DRAFT, GOOD_THANKS]})
@@ -121,8 +123,10 @@ class TestRun(unittest.TestCase):
         draft_ids = [d.review_id for d in result.drafts]
         self.assertNotIn("r-human", draft_ids)
         self.assertEqual(draft_ids, ["r-good"])
-        # never prompted for the legal review, only for the good one
-        self.assertEqual([c["key"] for c in client.calls], ["r-good"])
+        # never prompted for the legal review; the good one is consulted, then drafted
+        self.assertEqual(
+            [c["key"] for c in client.calls], ["assist:r-good", "r-good"]
+        )
         human = [d for d in result.decisions if d.review.review_id == "r-human"][0]
         self.assertEqual(human.category, TriageCategory.NEEDS_HUMAN)
 

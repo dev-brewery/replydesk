@@ -23,7 +23,7 @@ replydesk/                  # python package
   render.py                 # RunResult -> standalone HTML (no server needed)
   fixtures/
     __init__.py             # FIXTURE_DATE, demo loader, demo_run()
-    demo/                   # committed demo fixture set (T11, blocked on owner pick)
+    demo/                   # committed demo fixture set (T11; identity ruled D1)
       demo_profile.json     #   single source of the demo business identity
       tone_guide.md         #   demo tone guide (voice + facts)
       reviews.json          #   8 synthetic reviews, dates <= FIXTURE_DATE
@@ -71,7 +71,7 @@ class ToneGuide:
 
 @dataclass(frozen=True)
 class BusinessProfile:
-    name: str                    # demo business (identity pending owner pick)
+    name: str                    # demo business (single source: demo_profile.json, D1)
     kind: str                    # e.g. shop type
     city: str                    # fictional place
 
@@ -391,10 +391,11 @@ blocks on the client.
 - **Pinned fixture date: 2026-10-12.** Every demo fixture review is dated on or before
   it; `demo_run()` and all committed demo output are stamped with it, so regeneration
   is byte-deterministic (same fixtures in, same HTML out).
-- **Demo fixture set** (`replydesk/fixtures/demo/`, written in T11, blocked on the
-  owner's identity pick): 8 synthetic reviews — 3 thank-you, 3 fix-it, 2 needs-a-human
-  (one legal-flavored, one refund) — all named "the demo business (identity pending
-  owner pick)" until the pick lands in `demo_profile.json` and only there. Reviews are
+- **Demo fixture set** (`replydesk/fixtures/demo/`, written in T11; identity ruled
+  D1, 2026-10-13): 8 synthetic reviews — 3 thank-you, 3 fix-it, 2 needs-a-human
+  (one legal-flavored, one refund) — named "Ridgeline Plumbing", a plumbing
+  contractor in the fictional town of Cedar Falls, with `demo_profile.json` as the
+  single source of that identity. Reviews are
   written to exercise every triage group and the verifier (at least one fix-it whose
   canned draft contains a sanctioned commitment, so the demo shows verification
   passing; A5's retry/fallback is exercised in tests with crafted bad drafts).
