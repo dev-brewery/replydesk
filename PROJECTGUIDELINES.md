@@ -146,11 +146,11 @@ Canonical list: **`ACCEPTANCE_CRITERIA.md`** (owner-maintained). Mirrored here; 
 | When | Milestone |
 |---|---|
 | Mon Oct 12 | Theme read; idea picked (PROJECT.md, ACCEPTANCE_CRITERIA.md) |
-| Tue Oct 14→13 | Repo from kit; guidelines §3–§5; architecture + tasks; post skeleton; T01 first commit; offline spine starts |
+| Tue Oct 13 | Repo from kit; guidelines §3–§5; architecture + tasks; post skeleton; T01 first commit; offline spine starts |
 | Wed Oct 14 | Core build; **GitHub Pages demo live** from offline output |
 | Thu Oct 15, evening | **Owner real-world test = first-user session** (needs online path working; logged as it happens) |
 | Fri Oct 16 | App MUSTs verified; screenshots, post complete, agent-session slice; stretch stops 8 PM owner-local |
-| **Sat Oct 17, target 10 AM, hard stop 6 PM** | **Post published. Hard stop.** (Owner clicks Publish; post-publish checks same day) |
+| **Sat Oct 17, slot PENDING owner ruling (D2)** | **Post published.** Owner clicks Publish; hard-stop time set by Michael's ruling; post-publish checks same day |
 | Sun Oct 18, 11:59 PM | Official deadline — buffer only, never the plan |
 
 Cut order if behind: stretch → partner integration → agent session → demo polish. **Never cut the post.**
@@ -180,9 +180,9 @@ No application code in the architecture step.
 9. **Repo:** `dev-brewery/replydesk` — name availability check pending a valid GITHUB_TOKEN (preflight gap, see §1).
 
 ### Open questions for Michael
-1. **Demo business identity** (name, type of shop, fictional city) — appears in every fixture, screenshot and the post. Options with trade-offs in `JOURNAL.md`; blocks only fixture-writing tasks, not architecture.
+1. **Demo business identity — RULED 2026-10-13 (Michael): Option C — "Ridgeline Plumbing", a plumbing contractor in the fictional town of Cedar Falls.** Appears in every fixture, screenshot and the post. Single source of truth for the identity: `replydesk/fixtures/demo/demo_profile.json` (T11). Fictional everything; no real business names or places (A10).
 2. **GITHUB_TOKEN** refresh (`tools/gh-token-to-env.ps1` in a normal PowerShell, `-NoProfile`) — blocks repo creation/push/Pages; needed ideally today.
 3. **LLM endpoint for the online path** — which OpenAI-compatible endpoint + key goes in `.env` (needed by Thu evening for the first-user session).
 4. **replydeskhq.tech DNS** → GitHub Pages (A8; owner action at the .tech registrar; needed by Fri).
 5. **First-user session logistics** — who and when Thu evening; identity stays out of the repo.
-6. **Saturday publish slot** — docs assume target 10 AM PDT / hard stop 6 PM PDT; confirm the slot you'll be at the keyboard.
+6. **Saturday publish slot** — pending ruling (D2, JOURNAL.md packet); the docs assert no time until Michael sets it.

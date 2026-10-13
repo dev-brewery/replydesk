@@ -35,3 +35,101 @@ hostnames, or secrets here — refer to them as "the owner's site" / "the local 
 4. replydeskhq.tech DNS → GitHub Pages (by Fri).
 5. First-user session logistics (Thu evening).
 6. Saturday publish slot (docs assume 10 AM PDT target / 6 PM PDT hard stop).
+
+## 2026-10-13 (Tue) — architect-1 accepted
+
+- ARCHITECTURE.md (401 lines) + TASKS.md (18 tasks) produced, read in full by the orchestrator, verified against guidelines §9: file map, per-module signatures, data flow, deterministic triage rules (A2/A3), draft prompt outline, A5 verifier spec (fact-token traceability, one retry, labeled template fallback), offline strategy (pinned fixture date 2026-10-12; offline mode never reads local config), deterministic Pages build, risks table.
+- Ordering correct: offline spine T01–T12 before anything remote; verifier lands before the Thu first-user session; blocked-on-owner register explicit (T11 identity, T13 token, T15 endpoint, T17 DNS).
+- Architect correctly surfaced (did not embed) one scope question: LLM triage-assist as default-off stretch vs. core → presented to the owner with recommendation.
+- Architect decisions noted: stdlib http.server local UI; deterministic-first triage; MIT license line "replydesk contributors" (A10-safe).
+
+## 2026-10-13 (Tue) — T01 accepted (first commit)
+
+- Builder session builder-T01 completed T01. Orchestrator verified directly: git log shows exactly 1 commit 678e93a (2026-10-13 16:01 local, inside the Oct 12–18 window) with the builder sign-off trailer; 27 files; history contains no .env / .privacy-patterns / out/; suite "Ran 1 test ... OK" re-run by the orchestrator; worktree clean.
+- Privacy guard active on the commit path (tested pre-T01 with a synthetic staged match → blocked, exit 1).
+- Builder flagged (correctly, without acting): the commit author field carries the owner's global git identity; builder attribution is via the Signed-off-by: GLM-5.3-flash (via pi) trailer. A11 ("every commit is made by the agent") reads as satisfied — the builder agent makes every commit. Alternative (repo-local builder identity) surfaced to the owner as a minor option.
+- Process note: a shell-heredoc journal append was mangled by backtick interpolation (the kit's "briefs are files, never inline strings" lesson, re-learned); no corruption resulted — journal appends now go through file-editing tools only.
+- Next: T02 (model.py) — unblocked; cadence continues T02→T10 (all offline, no owner input needed).
+
+## 2026-10-13 (Tue) — deviation owned: decision presentation corrected
+
+The owner called out that determinations were not presented per procedure (options with trade-offs, wait for the call). Deviations, owned without technicality:
+1. Un-ruled determinations had been embedded into source-of-truth docs and then presented as "confirm or adjust" (Sat publish time in §8/plan anchor; recompressed calendar). Corrected: §8 and the plan anchor now read PENDING owner ruling (D2); the recompression plan itself is presented as decision D6. Also fixed a "Tue Oct 14→13" typo in §8.
+2. Options were presented with one-line descriptors and inline recommendations instead of scored trade-offs. Corrected: packet below.
+3. Owner *decisions* were batched in one queue with owner *actions* (token, DNS) and logistics, blurring what is a ruling vs a required action. Corrected: separated below.
+4. Guidelines §10 promised an options packet in this journal that did not exist. Corrected: packet written (below).
+
+### Decision packet (awaiting Michael's rulings; no doc embeds a default until ruled)
+
+**D1 — Demo business identity** (blocks T11/T12; clock: before Wed AM for the Pages gate). Hard filters every candidate must pass: clearly fictional, no privacy-pattern collision, exercises all triage groups + verifier. Scored on story quality for the writing-weighted post / demo richness / fixture effort:
+- (a) Cafe — e.g. "Bluebird Coffee Bar", Millbrook. Story: relatable "cafes live on their reviews". Demo: best — food-safety, refund, warm thank-you all natural. Effort: low-moderate. Weakness: cafe demos are an AI cliché (small creativity ding).
+- (b) Barbershop — e.g. "Northgate Barbers", Fairview. Story: personal-service freshness. Demo: weaker — safety/legal patterns feel forced, refunds less natural. Effort: low-moderate.
+- (c) Plumbing contractor — e.g. "Ridgeline Plumbing", Cedar Falls. Story: big-ticket disputes read real. Demo: strongest needs-a-human coverage; dull thank-yous. Effort: moderate.
+**D2 — Saturday publish slot** (owner clicks Publish; kit: a full day before the deadline):
+- (a) Morning — target 10 AM PDT, hard stop noon. Max buffer (Sat PM + all Sun for fixes). Costs an early Saturday.
+- (b) Midday — target 1 PM, hard stop 6 PM. Balanced; ~30 h buffer.
+- (c) Evening — target 8 PM, hard stop 11 PM. Max build time; thinnest buffer; recovery on fumes if anything breaks late.
+**D3 — LLM endpoint for `.env`** (needed Thu evening; any OpenAI-compatible endpoint satisfies A6; default model GLM-5.3-Flash):
+- (a) z.ai (provider the team already runs on): zero setup, key exists today. Open-innovation story rests on open weights + self-hostability (config-level, honest).
+- (b) Self-hosted GLM-5.3-Flash on owner hardware: strongest "we ran it ourselves" narrative for the post; setup hours before Thu; hardware risk.
+- (c) Other compatible host: only if already trusted/credited.
+**D4 — Commit authorship presentation**:
+- (a) Keep global git identity + `Signed-off-by: GLM-5.3-flash (via pi)` trailer (current): commits associate with the owner's GitHub account (Hacktoberfest counting); A11 reads satisfied (builder makes every commit).
+- (b) Repo-local builder identity: commits display as agent-authored; dissociate from the account, unmapped identity on GitHub, no functional gain.
+**D5 — LLM triage-assist scope** (architect's flag):
+- (a) Deterministic-only core, LLM assist as stretch (architect default): auditable; a model can never un-flag a legal threat; A2/A3 fully met; AI-at-core rests on drafting.
+- (b) Promote LLM assist to core: flashier demo; +1–2 tasks before Thu; adds a failure surface; marginal judging gain.
+**D6 — Response to the lost Monday**:
+- (a) Compress all milestones (current plan: MUSTs Thu, test Thu evening, post Fri, publish Sat): full scope; slack = Sunday only.
+- (b) Pre-cut one stretch item now per §8 order (first candidate: LLM triage-assist stretch; then agent-session slice): buys slack for MUSTs; costs a bonus element.
+- (c) Hold and cut only if forced: cutting under pressure is the Week-1 failure mode; not recommended.
+
+**Owner-required actions (not decisions; secrets/registrar/human logistics):** GITHUB_TOKEN refresh via `tools/gh-token-to-env.ps1` (normal PowerShell, `-NoProfile`); replydeskhq.tech DNS → Pages after T13 (exact records provided then); first-user session Thu evening (owner arranges; identity private); DEV login in the Chrome the DevTools MCP drives before publish day (orchestrator verifies when owner is ready).
+
+Unblocked meanwhile: T02→T10 offline cadence proceeds regardless of any ruling above.
+
+## 2026-10-13 (Tue) — global agent rules located; remaining violation owned
+
+- Located and read in full the machine-level global agent rules (non-negotiable relationship rules appended to every agent on this system; source lives outside this repo — neither kit nor product documentation). Re-read after the owner's warning.
+- Violation owned: the previous message's "owner-required actions" list handed the owner homework that exists to unblock the project (credentials, DNS, login) — contrary to "never hand the owner homework that exists to unblock you." The D1–D6 slate itself complies (options, trade-offs, waiting, no embedded defaults).
+- Corrected: those items re-presented as decisions D7–D10 below — options with trade-offs, awaiting the owner's call, or orchestrator work unless ruled otherwise.
+- Per the rules' course-correct protocol: stopped, realigned, awaiting direction. No new sub-agent launches until the owner directs; the unblocked T02 lane resumes on his word.
+
+**D7 — GitHub credentials** (gates T13 repo/push/Pages and publish day):
+- (a) Orchestrator drives `gh auth login` web device-flow: sub-agent-safe — gh stores the token itself; the owner's part is one Authorize click in the browser the DevTools MCP already drives; then the kit's env extraction runs locally. ~1 min of owner time.
+- (b) Owner runs `tools/gh-token-to-env.ps1` in a normal PowerShell (`-NoProfile`) exactly as the kit preflight designed. Zero agent involvement in auth; manual step is his.
+- (c) Defer all remote work; build stays local until ruled. Publish-day compression risk (Week-1 lesson: credentials blocked push until the last day).
+**D8 — replydeskhq.tech DNS** (gates A8; only after T13 exists):
+- (a) Owner sets two records at the registrar; orchestrator supplies exact values the moment Pages is live and verifies propagation.
+- (b) If the registrar offers an API and the owner provisions a scoped token into local config, orchestrator scripts and verifies DNS end-to-end.
+- (c) Skip the custom domain; publish on the github.io URL and amend A8 + post link (weakest .tech category entry; needs an explicit guidelines edit, which is owner territory).
+**D9 — First-user session (B1, Thu evening)** — the person can only be the owner's choice (his relationship; identity stays private). Format options:
+- (a) Live session Thu evening, logged as it happens (strongest evidence for the post).
+- (b) Owner hands the app over; collects the user's notes Friday (less live evidence).
+- (c) Skip; the post states honestly that no first user happened (costs the bonus; judges reward honesty).
+**D10 — DEV publish-day login**:
+- (a) Orchestrator verifies the Chrome session via the DevTools MCP before Saturday and flags only if login is missing (no owner action unless a gap appears).
+- (b) Owner logs into DEV in that Chrome ahead of time and says it's done.
+
+## 2026-10-13 (Tue) — decision-presentation rule corrected (final form)
+
+- The owner ruled on the global rule's presentation requirement: **one and only one decision at a time** — a single owner-level determination, options with trade-offs, his call, and only then the next.
+- Prior batch presentations were violations: the 8-item queue, the D1–D6 slate, and the D7–D10 append. The decisions themselves remain valid and queued; only their presentation was wrong. They will be presented strictly serially, most schedule-critical first, starting now with D1 (demo business identity — nearest clock: Wed AM Pages gate).
+- Build execution remains paused per the global rules' course-correct protocol (stop → realign → await direction); resumes on the owner's direction.
+
+## 2026-10-13 (Tue) — D1 RULED: demo business = Ridgeline Plumbing, Cedar Falls
+
+- Owner ruled Option C (plumbing contractor, fictional Cedar Falls). Applied: guidelines §10 Q1 marked RULED with the identity; tracker T11/T12 unblocked; the T11 brief will carry it. Identity lives only in `replydesk/fixtures/demo/demo_profile.json` (A10: fictional everything).
+- The owner's ruling closes the course-correct; build lane resumes at T02 under the standing delegation protocol (one task, one commit, brief → build → verify → accept → journal → next).
+- Next decision presented to the owner (one at a time): D7 GitHub credentials.
+
+## 2026-10-13 (Tue) — T02 accepted
+
+- Builder session builder-T02 completed T02. Orchestrator verified directly: 2 commits total, both builder-signed (809e2b5 T02); suite "Ran 7 tests ... OK" re-run by the orchestrator; all six dataclasses frozen with field names exactly per ARCHITECTURE §2 (checked programmatically); commit contains only `replydesk/model.py` + `tests/test_model.py`.
+- Builder note (honest, accepted): first commit attempt hit a shell quoting error on multiline `-m`; retried via a message file; no hook bypass, content unchanged.
+- Orchestrator doc updates (guidelines D1 ruling, journal, tracker) deliberately left unstaged by the builder; they ride the T03 commit per protocol — T03 brief will say so explicitly.
+- Lane continues: T03 next.
+
+## 2026-10-13 (Tue) — D7 RULED: owner runs the token script himself
+
+- Owner ruled Option B: he runs `tools/gh-token-to-env.ps1` in a normal PowerShell (`-NoProfile`), per the kit's design. No agent involvement in authentication. T13 (repo/push/Pages), T15 re-push and publish-day remote calls unblock whenever his `.env` carries a valid token — orchestrator checks `gh auth status` before each remote-dependent task and proceeds the moment it passes. Nothing was assigned back to him; the choice and timing are his.

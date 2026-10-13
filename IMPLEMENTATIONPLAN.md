@@ -8,8 +8,9 @@ Only the builder commits.
 
 | Item | What | Status | Commit |
 |---|---|---|---|
-| T01 | Scaffold + LICENSE + first commit of whole tree | 🔄 briefed | |
-| T02 | `model.py` dataclasses + enums | ⏳ | |
+| T01 | Scaffold + LICENSE + first commit of whole tree | ✅ | 678e93a |
+| T02 | `model.py` dataclasses + enums | ✅ | 809e2b5 |
+| T03 | Fixtures package (`FIXTURE_DATE`, demo loader) | next ⏳ | |
 | T03 | Fixtures package (`FIXTURE_DATE`, demo loader) | ⏳ | |
 | T04 | `toneguide.py` parser | ⏳ | |
 | T05 | `triage.py` deterministic rules | ⏳ | |
@@ -18,7 +19,7 @@ Only the builder commits.
 | T08 | `draft.py` pipeline (verify → retry → fallback) | ⏳ | |
 | T09 | `render.py` HTML output | ⏳ | |
 | T10 | `app.py` local web UI | ⏳ | |
-| T11 | Demo fixture set — **blocked: owner Q1 (identity)** | 🔒 | |
+| T11 | Demo fixture set (identity RULED: Ridgeline Plumbing, Cedar Falls) | ⏳ | |
 | T12 | `tools/build_demo.py` + committed `docs/` demo | ⏳ | |
 | T13 | GitHub repo + push + Pages — **blocked: owner Q2 (token)** | 🔒 | |
 | T14 | Online path (`--online`, `HttpLLM`) | ⏳ | |
@@ -28,7 +29,7 @@ Only the builder commits.
 | T18 | Final offline + privacy audit | ⏳ | |
 | ARCH | `ARCHITECTURE.md` + `TASKS.md` produced (architect-1) | ✅ | rides T01 |
 
-**STATE:** Tue Oct 13 PM. Architecture accepted (18 tasks, offline spine T01–T12 first). T01 in flight. GITHUB_TOKEN missing (T13+ blocked). Owner determinations pending: demo identity (T11/T12 + Wed Pages gate), token, endpoint, DNS, first-user logistics, Sat publish slot.
+**STATE:** Tue Oct 13 PM. D1 RULED (Ridgeline Plumbing, Cedar Falls) → T11/T12 unblocked. T01 ✅ 678e93a, T02 ✅ 809e2b5; lane continues T03→T10 (offline, unblocked). Pending decisions, presented one at a time: D7 credentials (presented), then endpoint (D3), publish slot (D2), DNS (D8), first-user (D9), triage-assist scope (D5), compression (D6), authorship (D4), DEV login (D10).
 
 ---
 
@@ -39,7 +40,7 @@ publish day, leaving Saturday for read-and-publish only. It does not replace
 **Anchors (weekdays verified; launch was Tue, so the kit's Mon gate compresses into Tue):**
 1. **Thu Oct 15, evening** — real-world test / first-user session (needs the online path working by then).
 2. **Fri Oct 16, EOD** — all MUSTs pass, post complete.
-3. **Sat Oct 17, 10:00 AM PDT target / 6:00 PM PDT hard stop** — publish. Hard stop.
+3. **Sat Oct 17** — publish. Slot + hard stop **PENDING owner ruling (D2)**; internal rule from the kit: a full day before the real deadline.
 
 ## Phase overview
 
