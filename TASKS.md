@@ -11,9 +11,9 @@ Status is tracked by the orchestrator in `IMPLEMENTATIONPLAN.md`. Post/publish w
 (D1–D4, B2) is scheduled there, not here; its file commits ride along with the next
 builder task or a dedicated tiny brief.
 
-Blocked-on-owner register: **T11** (demo identity, §10 Q1) · **T13** (GITHUB_TOKEN,
-§10 Q2) · **T15** (endpoint, §10 Q3) · **T17** (DNS, §10 Q4). Everything else runs
-unblocked today.
+Blocked-on-owner register: **T13** (GITHUB_TOKEN, §10 Q2) · **T15** (z.ai key
+presence in `.env`; endpoint ruled D3-A) · **T17** (DNS, §10 Q4). T11's identity is
+RULED (D1, 2026-10-13; guidelines §10 Q1). Everything else runs unblocked today.
 
 | ID | Task | Depends | Blocked | AC |
 |---|---|---|---|---|
@@ -31,6 +31,7 @@ unblocked today.
 | T12 | `tools/build_demo.py` → committed `docs/` demo | T09, T11 | (Q1) | A7, A8 |
 | T13 | GitHub repo public + push + Pages on `/docs` | T12 | **owner Q2** | D6, A8 |
 | T14 | Online path: wire `HttpLLM` behind `--online` | T07, T10 | — | A6 |
+| T14a | Triage assist (core): prompt + wiring behind `LLMClient` | T07 | — | A2, A6 |
 | T15 | Refresh canned drafts from a real run | T11, T14 | **owner Q3** | A7, A8 |
 | T16 | Screenshots of demo + app UI into `docs/` | T10, T12 | — | D4, D5 |
 | T17 | Custom domain `replydeskhq.tech` | T13 | **owner Q4** | A8 |
@@ -39,7 +40,9 @@ unblocked today.
 Ordering rationale (guidelines §9): offline demo spine T01–T12 lands before anything
 remote; the A5 verifier + fallback (T06/T08) lands before Thursday's first-user
 session; online work T14+ comes after the offline spine is proven; nothing delays the
-post past Saturday.
+post past Saturday. T14a (owner ruling D5-B) lands right after the online path it
+refines; it touches only `draft.py`/tests and depends on T07 alone, so it is
+parallel-safe with render/app work.
 
 ---
 
@@ -161,16 +164,18 @@ post past Saturday.
   port (threaded `http.server` in-test; no external network); the offline run
   handler returns HTML containing triage badges.
 
-## T11 — Demo fixture set — **BLOCKED on owner identity pick (§10 Q1)**
+## T11 — Demo fixture set (identity RULED 2026-10-13 — guidelines §10 Q1)
 
 - **Goal:** Write `replydesk/fixtures/demo/`: `demo_profile.json` (the **single**
   place the demo business name/kind/city live — the owner's pick), `tone_guide.md`
   (voice + 3–5 facts, at least one sanctioned commitment so the demo shows a
   verified commitment), `reviews.json` (8 reviews dated ≤ 2026-10-12: 3 thank-you,
   3 fix-it, 2 needs-a-human — one legal-flavored, one refund), `canned_drafts.json`
-  (one hand-authored draft per non-human review, each passing the verifier).
-  Fictional everything; no real names/places (A10). *Do not start before the
-  orchestrator brief states the owner's pick.*
+  (one hand-authored draft per non-human review, each passing the verifier; plus
+  `assist:{review_id}` entries per ARCHITECTURE §7 — include at least one flip to
+  fix-it and one confirming thank-you). Fictional everything; no real names/places
+  (A10). *Identity ruled (D1): the orchestrator's T11 brief carries it; single
+  source is `demo_profile.json`.*
 - **Files:** `replydesk/fixtures/demo/*`, `tests/test_demo_fixtures.py`.
 - **Acceptance:** Suite green; a test loads the set, runs `demo_run()` offline, and
   asserts: 8 decisions, every non-human review has a verified draft, both
@@ -212,10 +217,38 @@ post past Saturday.
   the mode in tests); manual smoke against the real endpoint is the orchestrator's
   verification step, not a test.
 
-## T15 — Refresh canned drafts from a real run — **BLOCKED on endpoint (§10 Q3)**
+## T14a — Triage assist (core) — thank-you → fix-it refinement
+
+- **Goal:** Per ARCHITECTURE §5 (owner ruling D5-B): `TRIAGE_ASSIST_SYSTEM` prompt
+  constant plus assist wiring inside `draft.run()` immediately after `triage_all`
+  (no signature change). Consulted once per deterministic THANK_YOU decision (the
+  star-rating fall-through) through the same client: `key="assist:"+review_id`,
+  `max_tokens=100`, output contract `category|one-line reason`. A well-formed
+  `fix-it` flips the decision to FIX_IT with a reason naming the assist and the
+  model's one-line reason (a flipped review then drafts with fix-it guidance);
+  malformed/empty output, a `needs-a-human` token, an `LLMError`, or a fixture
+  miss leaves the deterministic decision unchanged. FIX_IT/NEEDS_HUMAN reviews
+  never trigger an assist call; the assist never blocks or crashes the run.
+- **Depends on T07 only** (deliberately not T09/T10 — parallel-safe with
+  render/app work; its table position after T14 reflects the online path it
+  refines).
+- **Files:** `replydesk/draft.py`, `tests/test_triage_assist.py` (test-only tweaks
+  to existing T08 stubs allowed if they now see an extra assist call — say so in
+  the commit), regenerated `docs/` via `py tools/build_demo.py` (offline,
+  deterministic) so the committed demo reflects the assist.
+- **Acceptance:** Suite green offline (stub client, no socket): thank-you +
+  `fix-it|…` stub → flipped FIX_IT with assist-named reason; malformed / empty /
+  `needs-a-human` output → decision unchanged; raising client → unchanged; FIX_IT
+  and NEEDS_HUMAN reviews produce no assist call (stub counts calls);
+  `FixtureLLM` serves a canned `assist:` entry when present and misses gracefully
+  when absent; `docs/` regenerated with a clean diff on re-run. ACs A2 (triage
+  outcomes stay correct), A6 (rides the configurable endpoint).
+
+## T15 — Refresh canned drafts from a real run — **blocked on z.ai key in `.env` (endpoint ruled D3-A)**
 
 - **Goal:** `tools/refresh_canned_drafts.py`: online `demo_run()` over the demo
-  fixtures → verifier-checked drafts written back to `canned_drafts.json` →
+  fixtures → verifier-checked drafts written back to `canned_drafts.json`
+  (including its `assist:` entries, §7) →
   `tools/build_demo.py` re-run → commit updated `docs/`. Keeps the pinned date and
   determinism. Skip/stop cleanly if the endpoint is unavailable.
 - **Files:** `tools/refresh_canned_drafts.py`, `replydesk/fixtures/demo/canned_drafts.json`, `docs/`.

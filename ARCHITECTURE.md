@@ -154,13 +154,15 @@ class FixtureLLM:                # offline: dict[review_id -> canned completion]
 def load_env_config(env_path: str) -> dict   # LLM_BASE_URL / LLM_MODEL / LLM_API_KEY
 ```
 
-`key` carries the review_id: `FixtureLLM` looks completions up by it; `HttpLLM` uses it
-only for error messages. `load_env_config` is called **only** in online mode (§6).
+`key` carries the review_id for draft calls and `assist:{review_id}` for triage-assist
+calls (§5): `FixtureLLM` looks completions up by it; `HttpLLM` uses it only for error
+messages. `load_env_config` is called **only** in online mode (§6).
 
 ### `replydesk/draft.py`
 
 ```python
 FALLBACK_LABEL = "[Template reply - edit before posting]"   # exact wording up to builder, must start with "[Template"
+TRIAGE_ASSIST_SYSTEM: str       # §5 triage-assist classifier prompt (core, D5-B)
 
 def template_reply(decision: TriageDecision, profile: BusinessProfile) -> str
 
@@ -219,6 +221,12 @@ client error).
                  ▼                                                ▼
         ToneGuide, list[Review]  ──► triage.triage_all ──► TriageDecision per review
                  │                        │
+                 │                        ▼
+                 │            triage assist (§5, core; rides the same client):
+                 │            each THANK_YOU decision consulted once — a
+                 │            well-formed "fix-it|reason" flips it to FIX_IT;
+                 │            any other outcome leaves it unchanged
+                 │                        │
                  │          NEEDS_HUMAN ──┼──► no draft, reason only (A3)
                  │                        ▼
                  │            draft.run: prompt (tone guide + profile + review
@@ -248,9 +256,11 @@ the app never blocks on the network.
 ## 4. Triage rules (A2/A3)
 
 Triage is **deterministic and auditable** — a false "safe" on a legal threat is the
-worst failure mode, so rules, not a model, decide `NEEDS_HUMAN`. (An optional LLM
-triage-assist prompt exists in §5 as a stretch refinement of thank-you/fix-it only; it
-can never un-flag needs-a-human.)
+worst failure mode, so rules, not a model, decide `NEEDS_HUMAN`. (A **core** LLM
+triage-assist — owner ruling D5-B, 2026-10-13 — is consulted only *after* this table
+returns a THANK_YOU decision, i.e. only at the group-6 star-rating fall-through, and
+may only flip it to fix-it; it can never un-flag, pre-empt, or delay needs-a-human.
+Spec in §5.)
 
 Ordered rule groups, first match wins; `reason` names the matched group and pattern:
 
@@ -298,10 +308,38 @@ transport attempts, `thinking=low` via `extra_body` where the endpoint supports 
 - *Retry:* identical, plus the verifier violations: "Your previous draft contained
   unverified claims: {violations}. Rewrite without them." `max_tokens=400`.
 
-**Triage-assist prompt (stretch, default off).** *System:* classifier into
-thank-you/fix-it only. *User:* review text. Output `category|one-line reason`,
-`max_tokens=100`. Result may only move a review between those two when the deterministic
-rules fall through to star rating, never away from needs-a-human.
+**Triage-assist prompt (core — owner ruling D5-B, 2026-10-13).** The deterministic
+table of §4 always runs first, in full. The assist is consulted exactly when the
+table falls through to star rating into THANK_YOU (group 6: ≥4 stars, no pattern
+matched — the only reachable THANK_YOU), once per such review, via the same
+`LLMClient` as drafting: `complete(TRIAGE_ASSIST_SYSTEM, review.text,
+key="assist:"+review_id, max_tokens=100)`. *System:* classifier into thank-you/fix-it
+only — needs-a-human is not in its vocabulary; the deterministic table is the
+escalation authority. *User:* the review text verbatim. Output contract: one line,
+`category|one-line reason`, category ∈ {thank-you, fix-it}.
+
+Binding behavior:
+- Only a well-formed `fix-it` outcome has any effect: the decision flips to FIX_IT
+  and its `reason` names the assist and carries the model's one-line reason. The
+  flip is one-way (toward the more cautious category) and steers the draft prompt
+  (a flipped review drafts with fix-it guidance).
+- Everything else — malformed or empty output, a `needs-a-human` token, an
+  `LLMError`, a fixture miss — leaves the deterministic decision unchanged. No
+  assist-level retry (`HttpLLM`'s transport attempts already apply); the assist
+  never blocks, never crashes the run, never drafts text, and never reaches the
+  verifier.
+- FIX_IT and NEEDS_HUMAN decisions are never consulted, so the assist can never
+  move a review out of, or block entry into, needs-a-human (guardrails of D5-B).
+
+Wiring (consultation point): inside `draft.run()`, immediately after `triage_all`
+and before the drafting loop — no signature change. The one client argument yields
+all three behaviors with no mode branches: **online** (`HttpLLM`) = real assist;
+**demo** (`FixtureLLM`) = canned assist when the fixture set carries an `assist:`
+entry, deterministic result otherwise; **offline** (no working network client) =
+assist silently skipped, deterministic result stands. Offline and demo modes never
+read `.env` and never open a socket for the assist (§7; §10 item 5). The §5 call
+policy applies (temperature 0.3, 300 s timeout, `thinking=low` via `extra_body`
+where supported).
 
 **Tone-guide steering** happens before any of this: the guide is parsed once per run
 and injected verbatim into every system prompt, so every reply sounds like the same
@@ -340,6 +378,12 @@ labeled: the draft text *starts with* a visible marker like
 (verification failed / model unreachable). The label must survive rendering verbatim.
 `DraftResult.source` records `MODEL` / `MODEL_RETRY` / `TEMPLATE` for the UI and tests.
 
+Two as-built clarifications (T08): `template_reply()` returns the unlabeled body and
+`run()` prepends `FALLBACK_LABEL` — the draft-text-starts-with-the-marker invariant
+holds while the body alone stays verifier-clean. An `LLMError` from the *retry* call
+(not only the first) also falls back to the labeled template — the pipeline never
+blocks on the client.
+
 ---
 
 ## 7. Offline, caching, and fixture strategy (A7/A9)
@@ -357,6 +401,17 @@ labeled: the draft text *starts with* a visible marker like
 - **`FixtureLLM`** serves `canned_drafts.json` (keyed by review_id). Initially
   hand-authored by the builder; T15 optionally regenerates them from a real GLM-5.3-Flash
   run once the endpoint exists. The verifier runs on canned drafts too.
+- **Triage-assist fixture outcomes (optional, graceful).** `canned_drafts.json` may
+  also carry `"assist:{review_id}"` entries whose values are `category|one-line
+  reason` strings, served by `FixtureLLM` under the same key namespace — zero new
+  plumbing. A missing entry raises inside the consult and the deterministic decision
+  stands. Demo judgment (D5-B, stated): the committed demo **includes** assist
+  outcomes for its thank-you reviews — the assist is core scope, and a recorded run
+  that silently skipped it would under-represent the app; canned entries stand in
+  for the model exactly as canned drafts already do, under the same "recorded
+  offline run" banner. T15's real-run refresh replaces them with genuine assist
+  outputs when it runs. Determinism holds either way (committed fixtures in, same
+  bytes out).
 - **Offline mode never reads local config** (§10 item 5): no code path reachable from
   offline/demo mode opens `.env`; only `--online` calls `load_env_config`.
 - **Network policy:** every `HttpLLM` call has the 300 s timeout and transport retries;
@@ -391,11 +446,12 @@ come from this page and the app UI via `tools/screenshot.sh` only (binary-safe; 
 | Verifier false positives annoy the owner | Violations are shown in the UI, one retry with feedback, then a clearly labeled editable template — never a dead end. |
 | Week-1 failure modes (image corruption, location leaks, weekday drift) | Kit rules already in force: binary via `cp`/`screenshot.sh`, `.gitattributes` binary attrs, pre-commit privacy guard (never bypassed), calendar pre-verified in §8. |
 | Custom-domain DNS misses publish (§10 Q4) | Post links the github.io URL as fallback; domain swap is a one-line edit + re-push. |
+| Core triage-assist adds one LLM call per thank-you review (latency, failure surface) | Single call, `max_tokens=100`, no assist-level retry; malformed output / error / fixture miss → deterministic result stands; offline and demo never consult the network (§5, §7). |
 
 ## 10. Pending owner determinations wired into this design
 
 1. Demo business identity → `replydesk/fixtures/demo/demo_profile.json` only (T11).
 2. `GITHUB_TOKEN` → gates T13 (repo/push/Pages) and T15's re-push.
-3. LLM endpoint + key for `.env` → gates T14/T15 online runs (code lands mocked either way).
+3. LLM endpoint + key for `.env` → gates T14/T14a/T15 online runs (code lands mocked either way).
 4. `replydeskhq.tech` DNS → gates T17 (domain verification); fallback URL everywhere.
 5. First-user logistics + Sat publish slot → schedule only; no code impact.
