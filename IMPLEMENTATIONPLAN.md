@@ -13,8 +13,8 @@ Only the builder commits.
 | T03 | Fixtures package (`FIXTURE_DATE`, demo loader) | ✅ | 77efab5 |
 | T04 | `toneguide.py` parser | ✅ | b0d9225 |
 | T05 | `triage.py` deterministic rules | ✅ | 9699ffa |
-| T06 | `verifier.py` invention check | next ⏳ | |
-| T07 | `llm.py` clients + config loader | ⏳ | |
+| T06 | `verifier.py` invention check | ✅ | c04871f |
+| T07 | `llm.py` clients + config loader | next ⏳ | |
 | T08 | `draft.py` pipeline (verify → retry → fallback) | ⏳ | |
 | T09 | `render.py` HTML output | ⏳ | |
 | T10 | `app.py` local web UI | ⏳ | |
@@ -28,7 +28,7 @@ Only the builder commits.
 | T18 | Final offline + privacy audit | ⏳ | |
 | ARCH | `ARCHITECTURE.md` + `TASKS.md` produced (architect-1) | ✅ | rides T01 |
 
-**STATE:** Tue Oct 13 PM. D1 RULED. D7 RULED (B). T01–T05 ✅ (42 tests, offline, 5 commits, all builder-signed; T05 needed one verification-driven fix, amended in place). Lane: T06 next. Open decision: D3 endpoint (exposure/hardening analysis delivered; options refined to A / B-LAN / B-tunnel / C). Then: publish slot (D2), first-user (D9), DNS (D8), triage-assist (D5), compression (D6), authorship (D4), DEV login (D10).
+**STATE:** Tue Oct 13 PM. RULED: D1 (Ridgeline Plumbing), D7-B (owner runs token script), D3-A (z.ai GLM-5.3-Flash, owner's key). T01–T06 ✅ (55 tests, offline, 6 commits, all builder-signed). Lane: T07 next. Open decision: D9 first-user session (presented). Then: publish slot (D2), DNS (D8), triage-assist (D5), compression (D6), authorship (D4), DEV login (D10).
 
 ---
 

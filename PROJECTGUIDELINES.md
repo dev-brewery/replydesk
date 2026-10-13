@@ -184,5 +184,5 @@ No application code in the architecture step.
 2. **GITHUB_TOKEN — RULED 2026-10-13 (D7-B):** Michael runs `tools/gh-token-to-env.ps1` himself in a normal PowerShell (`-NoProfile`); no agent involvement in auth. T13+ unblocks on his timing; the orchestrator checks `gh auth status` before each remote-dependent step.
 3. **LLM endpoint — RULED 2026-10-13 (D3-A):** z.ai serving GLM-5.3-Flash, backed by the owner's key, in gitignored `.env` only. Rationale on record: the provider enforces authentication and billing at its edge. Local-endpoint alternatives considered and overruled — not pursued. The key never passes through chat, agents, or the repo; the owner places the `.env` values, the orchestrator smoke-tests `--online` once present.
 4. **replydeskhq.tech DNS** → GitHub Pages (A8; owner action at the .tech registrar; needed by Fri).
-5. **First-user session logistics** — who and when Thu evening; identity stays out of the repo.
+5. **First-user session — RULED 2026-10-13 (D9-A):** live session Thursday evening, logged as it happens; the person is Michael's choice, identity stays out of the repo (B1). Orchestrator preconditions: `--online` smoke-tested once the key is in `.env`; observations logged same evening for the post.
 6. **Saturday publish slot** — pending ruling (D2, JOURNAL.md packet); the docs assert no time until Michael sets it.

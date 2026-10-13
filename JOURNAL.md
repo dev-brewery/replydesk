@@ -179,3 +179,14 @@ Unblocked meanwhile: T02→T10 offline cadence proceeds regardless of any ruling
 - Applied: guidelines §10 Q3 marked RULED; tracker T15 unblocked pending the key's presence in `.env`; app-side hardening addenda tied to the local-endpoint option are dropped (T07/T14 proceed per TASKS.md as written); latency-telemetry addendum dropped with it (its motivation was the owner's inference-server data, now moot).
 - Secret handling: the key goes only into gitignored `.env` by the owner (never through chat, sub-agents, or the repo); orchestrator smoke-tests `--online` once values are present, before Thursday's session.
 - Next decision presented to the owner: D9 first-user session (nearest real-world lead time — Thursday evening). Lane resumes at T06.
+
+## 2026-10-13 (Tue) — T06 accepted
+
+- Builder session builder-T06 completed T06. Orchestrator verified directly: suite "Ran 55 tests ... OK" re-run by the orchestrator; A5 probe matrix executed by the orchestrator — traceable pass, invented number flagged ("30%"), unsanctioned commitments flagged ("we will", "free"), invented name flagged ("Tyler"), sanctioned commitment passes. Commit c04871f (verifier + tests + riding docs); worktree clean.
+- Builder caveat noted: spelled-out number words covered by a fixed list (one–twelve, tens, hundred, half, dozen); larger spelled numbers would be missed — acceptable, deterministic, extendable later if a fixture needs it.
+- Lane continues: T07 (llm.py clients + config loader) next. Decision D9 (first-user session) presented to the owner.
+
+## 2026-10-13 (Tue) — D9 RULED: A — live session Thursday evening
+
+- Owner ruled Option A: a live first-user session Thursday evening, logged as it happens. The person is his choice; identity stays out of the repo (B1). Preconditions tracked on the orchestrator: online path smoke-tested once the owner's z.ai key sits in `.env` (never printed, never committed); app runnable on his machine before the session; observations logged Thu evening for the post's My First User section (no identifying details).
+- Applied: guidelines §10 Q5 marked RULED. Next decision presented: D2 Saturday publish slot. Lane continues at T07.
