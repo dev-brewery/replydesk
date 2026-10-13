@@ -1,0 +1,96 @@
+{
+  "decisions": [
+    {
+      "category": "thank_you",
+      "reason": "no rule matched; 5 stars >= 4 -> thank-you",
+      "review_id": "ty-1",
+      "stars": 5
+    },
+    {
+      "category": "fix_it",
+      "reason": "triage assist flip: notes a second visit was needed to finish the job, so it deserves a fix-it response",
+      "review_id": "ty-2",
+      "stars": 4
+    },
+    {
+      "category": "thank_you",
+      "reason": "no rule matched; 5 stars >= 4 -> thank-you",
+      "review_id": "ty-3",
+      "stars": 5
+    },
+    {
+      "category": "fix_it",
+      "reason": "complaint: matched pattern 'late'",
+      "review_id": "fx-1",
+      "stars": 2
+    },
+    {
+      "category": "fix_it",
+      "reason": "complaint: matched pattern 'broken'",
+      "review_id": "fx-2",
+      "stars": 1
+    },
+    {
+      "category": "fix_it",
+      "reason": "complaint: matched pattern 'dirty'",
+      "review_id": "fx-3",
+      "stars": 3
+    },
+    {
+      "category": "needs_human",
+      "reason": "legal: matched pattern 'lawyer'",
+      "review_id": "human-legal",
+      "stars": 2
+    },
+    {
+      "category": "needs_human",
+      "reason": "refund-dispute: matched pattern 'refund'",
+      "review_id": "human-refund",
+      "stars": 1
+    }
+  ],
+  "drafts": [
+    {
+      "review_id": "ty-1",
+      "source": "model",
+      "text": "Thank you for the kind words. We are glad the faucet repair went smoothly and that the kitchen was left spotless. Friendly people and a fair price are what we aim for at Ridgeline Plumbing in Cedar Falls.",
+      "verified": true
+    },
+    {
+      "review_id": "ty-2",
+      "source": "model",
+      "text": "We are sorry the water heater swap needed a second visit. You are right to expect the job finished the first time. Your two-year workmanship warranty covers this repair, and we'll come back to check the fittings at no charge. Call us any morning and we'll make it right.",
+      "verified": true
+    },
+    {
+      "review_id": "ty-3",
+      "source": "model",
+      "text": "Thank you for noticing the care the crew takes. The boot covers and the walk-through of the shutoff valve show how the crew works. We are glad the visit went well.",
+      "verified": true
+    },
+    {
+      "review_id": "fx-1",
+      "source": "model",
+      "text": "We are sorry the visit started late and felt rushed. That is not the standard we hold at Ridgeline Plumbing in Cedar Falls. The repair is covered by our two-year workmanship warranty, and estimates are always free before any follow-up work. Call us and we'll set a time that works.",
+      "verified": true
+    },
+    {
+      "review_id": "fx-2",
+      "source": "model",
+      "text": "We are sorry about the wrong part and the leak that followed. You should not be left with a broken tap and a wet cabinet. The two-year workmanship warranty covers putting this right, and we'll come back to fix it at no charge. Call us between seven and five on a weekday and we'll get you on the schedule.",
+      "verified": true
+    },
+    {
+      "review_id": "fx-3",
+      "source": "model",
+      "text": "We are sorry the crew left the basement dirty. The cleanup is part of the job at Ridgeline Plumbing, and that part failed here. We'll come back to make it right, and the visit is covered by our two-year workmanship warranty. Call us and we'll set it up.",
+      "verified": true
+    }
+  ],
+  "generated_on": "2026-10-12",
+  "profile": {
+    "city": "Cedar Falls",
+    "kind": "plumbing contractor",
+    "name": "Ridgeline Plumbing"
+  }
+}

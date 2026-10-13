@@ -186,3 +186,4 @@ No application code in the architecture step.
 4. **replydeskhq.tech DNS** → GitHub Pages (A8; owner action at the .tech registrar; needed by Fri).
 5. **First-user session — RULED 2026-10-13 (D9-A):** live session Thursday evening, logged as it happens; the person is Michael's choice, identity stays out of the repo (B1). Orchestrator preconditions: `--online` smoke-tested once the key is in `.env`; observations logged same evening for the post.
 6. **Saturday publish slot — RULED 2026-10-13 (D2-B):** target 1 PM PDT (4 PM owner-local), hard stop 6 PM PDT (9 PM owner-local), Sat Oct 17. Owner clicks Publish; post-publish checks run the same day.
+7. **Commit authorship — RULED 2026-10-13 (D4-A):** author field carries the owner's global git identity; every commit carries the `Signed-off-by: GLM-5.3-flash (via pi)` trailer marking the builder. Convention ratified for the whole repo history; no rewrites.

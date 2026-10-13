@@ -221,3 +221,21 @@ Unblocked meanwhile: T02→T10 offline cadence proceeds regardless of any ruling
 - Parallel race, benign: the architect's writes landed after builder-T09's commit, so T09's commit excludes them; ARCHITECTURE.md + TASKS.md ride T10's commit per protocol. Builder correctly reported the tree state it saw.
 - T09 verified by the orchestrator: 89 tests OK; render probes all pass (script escaped, needs-human card has reason + no textarea, template label verbatim, demo banner, zero external URLs, source labels). Commit e6fa893.
 - Lane continues: T10 (app.py local web UI) next. Decision D4 (commit authorship) presented to the owner.
+
+## 2026-10-13 (Tue) — T10 accepted; offline spine complete
+
+- Builder session builder-T10 completed T10. Orchestrator verified: 98 tests OK re-run; in-process server probe on an ephemeral loopback port — `GET /` renders the form with the exact `# Voice` / `# Facts I'll stand behind` headings and `5 | ` hint; `POST /run` with a 5-star and a refund review returns THANK YOU and NEEDS HUMAN cards, the offline-mode note, and the `[Template reply` label; server binds 127.0.0.1 only; offline mode raises through the `_OfflineClient` stand-in (never reads `.env`). Commit d8194dd carries app.py, tests, and the architect-2 amendment (ARCHITECTURE.md, TASKS.md) exactly as found.
+- **Milestone: offline spine T01–T10 complete.** Wed gate on track: T11 (Ridgeline fixtures) → T12 (docs demo) next; T13 push waits on the owner's token.
+- Decision D4 (commit authorship) presented to the owner.
+
+## 2026-10-13 (Tue) — D4 RULED: A — current authorship convention ratified
+
+- Owner ruled Option A: author = his global git identity; `Signed-off-by: GLM-5.3-flash (via pi)` trailer marks the builder on every commit. Recorded in guidelines §10 item 7. No history rewrite; convention holds for the rest of the build.
+- Decision queue now empty of unconditional items. Remaining, each presented alone when its trigger fires: D8 DNS (when the owner's token lands and T13 exists), D10 DEV login (Friday), D6 cut-order (only if a gate slips).
+- Lane continues: T11 (Ridgeline Plumbing demo fixtures).
+
+## 2026-10-13 (Tue) — T11 accepted; builder deviation ruled on
+
+- Builder session builder-T11 completed T11. Orchestrator verified: 106 tests OK re-run; `demo_run()` → 8 decisions, 6 drafts all verified, `generated_on == FIXTURE_DATE` (2026-10-12); categories 2 THANK_YOU / 4 FIX_IT / 2 NEEDS_HUMAN — the assist FLIPPED ty-2 (4★ pattern-free) to FIX_IT with an assist-named reason and the two confirms held; both needs-a-human reviews carry pattern reasons and no drafts; all review dates ≤ 2026-10-12; fixtures are fictional throughout (profile exactly as ruled; tone-guide voice + facts sanction the canned commitments). Commit 206a9a1.
+- **Deviation, flagged by the builder and accepted:** T11's acceptance (assist flip in `demo_run()`) required the T14a consult, which no prior task had built — the builder implemented it in `draft.py` exactly to the T14a spec (system prompt, `key="assist:{id}"`, max_tokens 100, one-way flip, malformed/LLMError → deterministic stands) and said so plainly. Accepted: the alternative was fixtures that cannot exercise the ruled D5-B core. T14a's remainder is now its dedicated consult-path unit tests; tracker updated. Two T08 stub-count assertions adjusted per T14a's explicit allowance; ARCHITECTURE's stale "identity pending" wording aligned to D1 (builder edit, correct).
+- Lane continues: T12 (tools/build_demo.py + committed docs/ demo — the Wednesday gate).

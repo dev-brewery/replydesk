@@ -17,19 +17,19 @@ Only the builder commits.
 | T07 | `llm.py` clients + config loader | ✅ | ecf776e |
 | T08 | `draft.py` pipeline (verify → retry → fallback) | ✅ | 50b50cb |
 | T09 | `render.py` HTML output | ✅ | e6fa893 |
-| T10 | `app.py` local web UI | next ⏳ | |
-| T11 | Demo fixture set (identity RULED: Ridgeline Plumbing, Cedar Falls) | ⏳ | |
-| T12 | `tools/build_demo.py` + committed `docs/` demo | ⏳ | |
+| T10 | `app.py` local web UI | ✅ | d8194dd |
+| T11 | Demo fixture set (identity RULED: Ridgeline Plumbing, Cedar Falls) | ✅ | 206a9a1 |
+| T12 | `tools/build_demo.py` + committed `docs/` demo | next ⏳ | |
 | T13 | GitHub repo + push + Pages — owner ruled D7-B: he runs the token script himself; unblocks on his timing | ⏳ | |
 | T14 | Online path (`--online`, `HttpLLM`) | ⏳ | |
-| T14a | Triage assist (core, D5-B): prompt + wiring | ⏳ | |
+| T14a | Triage assist (core, D5-B): consult landed in T11; remainder = dedicated unit tests | ⏳ | 206a9a1 (partial) |
 | T15 | Refresh canned drafts — endpoint RULED (D3-A z.ai); runs once the owner's key sits in `.env` | ⏳ | |
 | T16 | Screenshots into `docs/` | ⏳ | |
 | T17 | Custom domain replydeskhq.tech — **blocked: owner Q4 (DNS)** | 🔒 | |
 | T18 | Final offline + privacy audit | ⏳ | |
 | ARCH | `ARCHITECTURE.md` + `TASKS.md` produced (architect-1) | ✅ | rides T01 |
 
-**STATE:** Tue Oct 13 PM. RULED: D1, D7-B, D3-A, D9-A, D2-B, D5-B (assist core; architect-2 amendment accepted — lands on T10's commit). T01–T09 ✅ (89 tests, offline, 9 commits, all builder-signed). Lane: T10 next. Open decision: D4 commit authorship (presented). Queued: D8 DNS (when token/T13); D10 DEV login (Fri); D6 only if a gate slips.
+**STATE:** Tue Oct 13 PM. Offline spine + fixtures DONE (T01–T11 ✅, 106 tests, 11 commits). demo_run(): 8 decisions, 6 verified drafts, assist flip live, needs-a-human undrafted. All unconditional decisions RULED (D1, D2-B, D3-A, D4-A, D5-B, D7-B, D9-A); D8/D10/D6 conditional. Lane: T12 (docs demo — Wed gate; push waits on owner token) → T13 (blocked on token) → T14/T14a-remainder.
 
 ---
 
