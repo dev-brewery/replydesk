@@ -202,3 +202,14 @@ Unblocked meanwhile: T02→T10 offline cadence proceeds regardless of any ruling
 - Owner ruled Option B. Applied: guidelines §8 Saturday row and §10 Q6 now carry the ruled times (target 1 PM PDT / 4 PM owner-local; hard stop 6 PM PDT / 9 PM owner-local); IMPLEMENTATIONPLAN anchor 3 updated. Friday's plan (post freeze, screenshots, agent-session slice) now plans backward from the 1 PM PDT target.
 - Decision sequencing ahead (still strictly one at a time): D5 triage-assist scope next (it can change TASKS.md while the lane is still mid-build); then D4 authorship; D8 DNS when the token lands and T13 exists; D10 DEV-login verification Friday; D6 compression only if a gate actually slips (on current evidence the compressed plan is holding).
 - Lane continues at T08.
+
+## 2026-10-13 (Tue) — T08 accepted (A5 pipeline complete)
+
+- Builder session builder-T08 completed T08. Orchestrator verified directly: suite "Ran 78 tests ... OK" re-run by the orchestrator; full pipeline matrix executed by the orchestrator — clean draft → MODEL/verified; bad-then-good → MODEL_RETRY with the violation text present in the retry prompt; bad-twice and unreachable-client → TEMPLATE drafts starting with the `[Template reply - edit before posting]` label with explanatory notes; needs-a-human review never prompted or drafted; template body passes the verifier; `generated_on` pinned from the `today` argument. Commit 50b50cb; worktree clean.
+- Two builder-flagged deviations reviewed and accepted: (1) `template_reply()` returns the body and `run()` prepends `FALLBACK_LABEL` — keeps the §6 invariant (draft text starts with the marker) while the unlabeled body stays verifier-clean; (2) an `LLMError` on the retry call also falls back to a labeled template (never-blocks spirit). Architect follow-up queued (non-blocking): make both explicit in ARCHITECTURE §6.
+- Lane continues: T09 (render.py) next. Decision D5 (LLM triage-assist scope) presented to the owner.
+
+## 2026-10-13 (Tue) — D5 RULED: B — triage-assist promoted to core
+
+- Owner ruled Option B: the LLM triage-assist becomes core scope this week. Guardrails from the architecture stand unchanged: the assist classifies thank-you vs fix-it only, is consulted only when the deterministic table falls through to star rating, and can never move a review out of needs-a-human — rules remain the escalation authority.
+- Routing per role boundaries: architect-2 briefed to amend ARCHITECTURE §5 (assist spec → core; offline/demo behavior defined) and TASKS.md (one new task, no renumbering); builder lane unaffected (T09 render.py proceeds in parallel). Verification and tracker update follow the architect's return.

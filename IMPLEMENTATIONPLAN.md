@@ -15,8 +15,8 @@ Only the builder commits.
 | T05 | `triage.py` deterministic rules | ✅ | 9699ffa |
 | T06 | `verifier.py` invention check | ✅ | c04871f |
 | T07 | `llm.py` clients + config loader | ✅ | ecf776e |
-| T08 | `draft.py` pipeline (verify → retry → fallback) | next ⏳ | |
-| T09 | `render.py` HTML output | ⏳ | |
+| T08 | `draft.py` pipeline (verify → retry → fallback) | ✅ | 50b50cb |
+| T09 | `render.py` HTML output | next ⏳ | |
 | T10 | `app.py` local web UI | ⏳ | |
 | T11 | Demo fixture set (identity RULED: Ridgeline Plumbing, Cedar Falls) | ⏳ | |
 | T12 | `tools/build_demo.py` + committed `docs/` demo | ⏳ | |
@@ -28,7 +28,7 @@ Only the builder commits.
 | T18 | Final offline + privacy audit | ⏳ | |
 | ARCH | `ARCHITECTURE.md` + `TASKS.md` produced (architect-1) | ✅ | rides T01 |
 
-**STATE:** Tue Oct 13 PM. RULED: D1 (Ridgeline Plumbing), D7-B, D3-A (z.ai key), D9-A (live first-user Thu evening). T01–T07 ✅ (69 tests, offline, 7 commits, all builder-signed). Lane: T08 next. Open decision: D2 Saturday publish slot (presented). Then: DNS (D8, after token/T13), triage-assist (D5), compression (D6), authorship (D4), DEV login (D10).
+**STATE:** Tue Oct 13 PM. RULED: D1, D7-B, D3-A, D9-A, D2-B (publish Sat 1 PM PDT target / 6 PM hard stop). T01–T08 ✅ (78 tests, offline, 8 commits, all builder-signed). Lane: T09 next. Open decision: D5 triage-assist scope (presented). Queued: D4 authorship; D8 DNS (when token/T13); D10 DEV login (Fri); D6 only if a gate slips.
 
 ---
 
