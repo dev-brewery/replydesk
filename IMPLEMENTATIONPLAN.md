@@ -11,8 +11,8 @@ Only the builder commits.
 | T01 | Scaffold + LICENSE + first commit of whole tree | ✅ | 678e93a |
 | T02 | `model.py` dataclasses + enums | ✅ | 809e2b5 |
 | T03 | Fixtures package (`FIXTURE_DATE`, demo loader) | ✅ | 77efab5 |
-| T04 | `toneguide.py` parser | next ⏳ | |
-| T05 | `triage.py` deterministic rules | ⏳ | |
+| T04 | `toneguide.py` parser | ✅ | b0d9225 |
+| T05 | `triage.py` deterministic rules | next ⏳ | |
 | T06 | `verifier.py` invention check | ⏳ | |
 | T07 | `llm.py` clients + config loader | ⏳ | |
 | T08 | `draft.py` pipeline (verify → retry → fallback) | ⏳ | |
@@ -28,7 +28,7 @@ Only the builder commits.
 | T18 | Final offline + privacy audit | ⏳ | |
 | ARCH | `ARCHITECTURE.md` + `TASKS.md` produced (architect-1) | ✅ | rides T01 |
 
-**STATE:** Tue Oct 13 PM. D1 RULED (Ridgeline Plumbing, Cedar Falls). D7 RULED (owner runs the token script himself; T13 unblocks on his timing). T01 ✅ 678e93a · T02 ✅ 809e2b5 · T03 ✅ 77efab5 (19 tests, offline). Lane: T04 next. Pending decisions, one at a time: D3 endpoint (presented now; clock Thu PM), then publish slot (D2), first-user (D9), DNS (D8), triage-assist (D5), compression (D6), authorship (D4), DEV login (D10).
+**STATE:** Tue Oct 13 PM. D1 RULED. D7 RULED (B). T01–T04 ✅ (25 tests, offline, 4 commits, all builder-signed). Lane: T05 next. Open decision: D3 endpoint (hardening info delivered for a local-endpoint option; A6 model-identity note surfaced). Then: publish slot (D2), first-user (D9), DNS (D8), triage-assist (D5), compression (D6), authorship (D4), DEV login (D10).
 
 ---
 
