@@ -157,3 +157,25 @@ Unblocked meanwhile: T02→T10 offline cadence proceeds regardless of any ruling
 - Answer delivered in chat: concerns are real but specific — unauthenticated open inbound ports on research-grade servers get scanner-found and GPU-abused; server software has had path-traversal-class bugs; plaintext HTTP exposes review payloads; a forwarded port is a pivot into the LAN and reveals the home IP. Managed path (tunnel with edge TLS + zero-trust access + API key + localhost bind + metadata-only logging) removes most of it; raw port-forwarding of an unauthenticated server is the one genuinely bad option.
 - Offered within D3: latency/token metrics per call recorded by the app in T14 (serves his production-data goal without extra exposure); note that any hostname he stands up for the endpoint should be added to his local `.privacy-patterns` so it never enters the repo.
 - D3 options refined: A (hosted z.ai, GLM-5.3-Flash default) / B-LAN (endpoint reachable only on his network) / B-tunnel (endpoint published via authenticated tunnel for WAN data) / C (another provider). Still one decision; awaiting his call.
+
+## 2026-10-13 (Tue) — T05: first pass rejected, fix accepted
+
+- First pass (a4bd584) failed orchestrator verification: probe `'the tech named Dave was dismissive'` returned FIX_IT because the personal-group staff-name pattern hardcoded retail roles — incompatible with the RULED demo identity (plumbing contractor); the demo's own needs-a-human fixtures would have fallen through.
+- Re-briefed (builder-T05fix): role alternation extended to trade/service roles (STAFF_ROLES), case-sensitivity preserved, two new tests. Commit amended in place (no remote yet; one commit per task kept) → `9699ffa`.
+- Orchestrator re-verified: 42 tests OK; tech/Dave and plumber/Marlene probes → NEEDS_HUMAN; lowercase "spoke to the manager" → FIX_IT (not personal); history shows 5 commits, one per task.
+- Spec note for the architect (not a T05 defect): §4's staff-name forms are "spoke to X" / "[role] named X"; a warm unquoted mention ("our technician Tyler was wonderful") does not match and stays thank-you — architect should either keep fixtures unambiguous on this or amend §4 if all name mentions should flag.
+- Lane continues: T06 (verifier.py) next.
+
+## 2026-10-13 (Tue) — D3 correction: existing cloudflared tunnel does NOT close B-tunnel
+
+- The owner noted he already runs a cloudflared tunnel for a subdomain on one of his domains and assumed the tunnel option was therefore unavailable; he then directed me to read the docs rather than gloss over it. cloudflared is not present on this machine (the tunnel runs on another of his boxes), so the official docs were read in full (configuration-file / ingress-rules page).
+- Docs fact, verbatim: one locally-managed tunnel exposes multiple public hostnames — an ingress list maps each hostname to its own local service, evaluated top to bottom, ending in a catch-all rule; wildcards also supported. Adding the endpoint = one ingress rule (`hostname: <new subdomain>` → `service: http://localhost:8080`) placed before the catch-all, one `cloudflared tunnel route dns` for the hostname, restart cloudflared. No new infrastructure; same authenticated, TLS-terminated tunnel.
+- Consequence for D3: B-tunnel (publish the endpoint via his existing tunnel) is fully open — arguably cheaper than assumed, since the tunnel, edge TLS, and DNS automation already exist. Security shape unchanged: API key on the model server, bind to localhost on the box, optional per-hostname Access policy, metadata-only logging. The owner's real domain stays out of repo files per privacy rules (chat only).
+- D3 remains the one open decision: A / B-LAN / B-tunnel / C.
+
+## 2026-10-13 (Tue) — D3 RULED: A — z.ai, GLM-5.3-Flash, owner's key
+
+- Owner ruled: the online path runs against z.ai serving GLM-5.3-Flash, backed by his key; rationale on record — the provider edge enforces authentication and valid billing, so no self-hosted exposure is involved. He declined the tunnel option (was not convinced multi-subdomain routing on one tunnel is advisable); overruled path dropped — not pursued.
+- Applied: guidelines §10 Q3 marked RULED; tracker T15 unblocked pending the key's presence in `.env`; app-side hardening addenda tied to the local-endpoint option are dropped (T07/T14 proceed per TASKS.md as written); latency-telemetry addendum dropped with it (its motivation was the owner's inference-server data, now moot).
+- Secret handling: the key goes only into gitignored `.env` by the owner (never through chat, sub-agents, or the repo); orchestrator smoke-tests `--online` once values are present, before Thursday's session.
+- Next decision presented to the owner: D9 first-user session (nearest real-world lead time — Thursday evening). Lane resumes at T06.

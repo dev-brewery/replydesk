@@ -12,8 +12,8 @@ Only the builder commits.
 | T02 | `model.py` dataclasses + enums | ✅ | 809e2b5 |
 | T03 | Fixtures package (`FIXTURE_DATE`, demo loader) | ✅ | 77efab5 |
 | T04 | `toneguide.py` parser | ✅ | b0d9225 |
-| T05 | `triage.py` deterministic rules | next ⏳ | |
-| T06 | `verifier.py` invention check | ⏳ | |
+| T05 | `triage.py` deterministic rules | ✅ | 9699ffa |
+| T06 | `verifier.py` invention check | next ⏳ | |
 | T07 | `llm.py` clients + config loader | ⏳ | |
 | T08 | `draft.py` pipeline (verify → retry → fallback) | ⏳ | |
 | T09 | `render.py` HTML output | ⏳ | |
@@ -22,13 +22,13 @@ Only the builder commits.
 | T12 | `tools/build_demo.py` + committed `docs/` demo | ⏳ | |
 | T13 | GitHub repo + push + Pages — owner ruled D7-B: he runs the token script himself; unblocks on his timing | ⏳ | |
 | T14 | Online path (`--online`, `HttpLLM`) | ⏳ | |
-| T15 | Refresh canned drafts — blocked: endpoint ruling (D3, presented to owner) | 🔒 | |
+| T15 | Refresh canned drafts — endpoint RULED (D3-A z.ai); runs once the owner's key sits in `.env` | ⏳ | |
 | T16 | Screenshots into `docs/` | ⏳ | |
 | T17 | Custom domain replydeskhq.tech — **blocked: owner Q4 (DNS)** | 🔒 | |
 | T18 | Final offline + privacy audit | ⏳ | |
 | ARCH | `ARCHITECTURE.md` + `TASKS.md` produced (architect-1) | ✅ | rides T01 |
 
-**STATE:** Tue Oct 13 PM. D1 RULED. D7 RULED (B). T01–T04 ✅ (25 tests, offline, 4 commits, all builder-signed). Lane: T05 next. Open decision: D3 endpoint (hardening info delivered for a local-endpoint option; A6 model-identity note surfaced). Then: publish slot (D2), first-user (D9), DNS (D8), triage-assist (D5), compression (D6), authorship (D4), DEV login (D10).
+**STATE:** Tue Oct 13 PM. D1 RULED. D7 RULED (B). T01–T05 ✅ (42 tests, offline, 5 commits, all builder-signed; T05 needed one verification-driven fix, amended in place). Lane: T06 next. Open decision: D3 endpoint (exposure/hardening analysis delivered; options refined to A / B-LAN / B-tunnel / C). Then: publish slot (D2), first-user (D9), DNS (D8), triage-assist (D5), compression (D6), authorship (D4), DEV login (D10).
 
 ---
 
