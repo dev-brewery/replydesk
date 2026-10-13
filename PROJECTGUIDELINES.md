@@ -150,7 +150,7 @@ Canonical list: **`ACCEPTANCE_CRITERIA.md`** (owner-maintained). Mirrored here; 
 | Wed Oct 14 | Core build; **GitHub Pages demo live** from offline output |
 | Thu Oct 15, evening | **Owner real-world test = first-user session** (needs online path working; logged as it happens) |
 | Fri Oct 16 | App MUSTs verified; screenshots, post complete, agent-session slice; stretch stops 8 PM owner-local |
-| **Sat Oct 17, slot PENDING owner ruling (D2)** | **Post published.** Owner clicks Publish; hard-stop time set by Michael's ruling; post-publish checks same day |
+| **Sat Oct 17, target 1 PM PDT, hard stop 6 PM PDT** (D2-B) | **Post published.** Owner clicks Publish; post-publish checks same day; buffer: Sat evening + all Sun |
 | Sun Oct 18, 11:59 PM | Official deadline — buffer only, never the plan |
 
 Cut order if behind: stretch → partner integration → agent session → demo polish. **Never cut the post.**
@@ -185,4 +185,4 @@ No application code in the architecture step.
 3. **LLM endpoint — RULED 2026-10-13 (D3-A):** z.ai serving GLM-5.3-Flash, backed by the owner's key, in gitignored `.env` only. Rationale on record: the provider enforces authentication and billing at its edge. Local-endpoint alternatives considered and overruled — not pursued. The key never passes through chat, agents, or the repo; the owner places the `.env` values, the orchestrator smoke-tests `--online` once present.
 4. **replydeskhq.tech DNS** → GitHub Pages (A8; owner action at the .tech registrar; needed by Fri).
 5. **First-user session — RULED 2026-10-13 (D9-A):** live session Thursday evening, logged as it happens; the person is Michael's choice, identity stays out of the repo (B1). Orchestrator preconditions: `--online` smoke-tested once the key is in `.env`; observations logged same evening for the post.
-6. **Saturday publish slot** — pending ruling (D2, JOURNAL.md packet); the docs assert no time until Michael sets it.
+6. **Saturday publish slot — RULED 2026-10-13 (D2-B):** target 1 PM PDT (4 PM owner-local), hard stop 6 PM PDT (9 PM owner-local), Sat Oct 17. Owner clicks Publish; post-publish checks run the same day.

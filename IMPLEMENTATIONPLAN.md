@@ -14,8 +14,8 @@ Only the builder commits.
 | T04 | `toneguide.py` parser | ✅ | b0d9225 |
 | T05 | `triage.py` deterministic rules | ✅ | 9699ffa |
 | T06 | `verifier.py` invention check | ✅ | c04871f |
-| T07 | `llm.py` clients + config loader | next ⏳ | |
-| T08 | `draft.py` pipeline (verify → retry → fallback) | ⏳ | |
+| T07 | `llm.py` clients + config loader | ✅ | ecf776e |
+| T08 | `draft.py` pipeline (verify → retry → fallback) | next ⏳ | |
 | T09 | `render.py` HTML output | ⏳ | |
 | T10 | `app.py` local web UI | ⏳ | |
 | T11 | Demo fixture set (identity RULED: Ridgeline Plumbing, Cedar Falls) | ⏳ | |
@@ -28,7 +28,7 @@ Only the builder commits.
 | T18 | Final offline + privacy audit | ⏳ | |
 | ARCH | `ARCHITECTURE.md` + `TASKS.md` produced (architect-1) | ✅ | rides T01 |
 
-**STATE:** Tue Oct 13 PM. RULED: D1 (Ridgeline Plumbing), D7-B (owner runs token script), D3-A (z.ai GLM-5.3-Flash, owner's key). T01–T06 ✅ (55 tests, offline, 6 commits, all builder-signed). Lane: T07 next. Open decision: D9 first-user session (presented). Then: publish slot (D2), DNS (D8), triage-assist (D5), compression (D6), authorship (D4), DEV login (D10).
+**STATE:** Tue Oct 13 PM. RULED: D1 (Ridgeline Plumbing), D7-B, D3-A (z.ai key), D9-A (live first-user Thu evening). T01–T07 ✅ (69 tests, offline, 7 commits, all builder-signed). Lane: T08 next. Open decision: D2 Saturday publish slot (presented). Then: DNS (D8, after token/T13), triage-assist (D5), compression (D6), authorship (D4), DEV login (D10).
 
 ---
 
@@ -39,7 +39,7 @@ publish day, leaving Saturday for read-and-publish only. It does not replace
 **Anchors (weekdays verified; launch was Tue, so the kit's Mon gate compresses into Tue):**
 1. **Thu Oct 15, evening** — real-world test / first-user session (needs the online path working by then).
 2. **Fri Oct 16, EOD** — all MUSTs pass, post complete.
-3. **Sat Oct 17** — publish. Slot + hard stop **PENDING owner ruling (D2)**; internal rule from the kit: a full day before the real deadline.
+3. **Sat Oct 17, 1:00 PM PDT target / 6:00 PM PDT hard stop** (D2-B) — publish. Buffer: Sat evening + all Sun.
 
 ## Phase overview
 

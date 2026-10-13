@@ -190,3 +190,15 @@ Unblocked meanwhile: T02→T10 offline cadence proceeds regardless of any ruling
 
 - Owner ruled Option A: a live first-user session Thursday evening, logged as it happens. The person is his choice; identity stays out of the repo (B1). Preconditions tracked on the orchestrator: online path smoke-tested once the owner's z.ai key sits in `.env` (never printed, never committed); app runnable on his machine before the session; observations logged Thu evening for the post's My First User section (no identifying details).
 - Applied: guidelines §10 Q5 marked RULED. Next decision presented: D2 Saturday publish slot. Lane continues at T07.
+
+## 2026-10-13 (Tue) — T07 accepted
+
+- Builder session builder-T07 completed T07. Orchestrator verified directly: suite "Ran 69 tests ... OK" re-run by the orchestrator; orchestrator probes confirm retry-then-success over exactly 3 attempts, request body carries temperature 0.3 / max_tokens / extra_body thinking=low, Bearer header only when a key is set, loader strips quotes and skips comments, and LLMError text references only "configured endpoint" (no URL/key leak). Commit ecf776e (llm.py + tests + riding docs); worktree clean.
+- Builder honestly reported three test-side iterations before green (imports, mock context-manager, header casing) and one productive widening of the transport-exception catch. No rule breaches.
+- Lane continues: T08 (draft.py pipeline — the A5 verify → retry → labeled-fallback core) next. Decision D2 (Saturday publish slot) presented to the owner.
+
+## 2026-10-13 (Tue) — D2 RULED: B — Sat publish target 1 PM PDT, hard stop 6 PM PDT
+
+- Owner ruled Option B. Applied: guidelines §8 Saturday row and §10 Q6 now carry the ruled times (target 1 PM PDT / 4 PM owner-local; hard stop 6 PM PDT / 9 PM owner-local); IMPLEMENTATIONPLAN anchor 3 updated. Friday's plan (post freeze, screenshots, agent-session slice) now plans backward from the 1 PM PDT target.
+- Decision sequencing ahead (still strictly one at a time): D5 triage-assist scope next (it can change TASKS.md while the lane is still mid-build); then D4 authorship; D8 DNS when the token lands and T13 exists; D10 DEV-login verification Friday; D6 compression only if a gate actually slips (on current evidence the compressed plan is holding).
+- Lane continues at T08.
