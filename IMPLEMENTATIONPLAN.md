@@ -10,9 +10,8 @@ Only the builder commits.
 |---|---|---|---|
 | T01 | Scaffold + LICENSE + first commit of whole tree | ✅ | 678e93a |
 | T02 | `model.py` dataclasses + enums | ✅ | 809e2b5 |
-| T03 | Fixtures package (`FIXTURE_DATE`, demo loader) | next ⏳ | |
-| T03 | Fixtures package (`FIXTURE_DATE`, demo loader) | ⏳ | |
-| T04 | `toneguide.py` parser | ⏳ | |
+| T03 | Fixtures package (`FIXTURE_DATE`, demo loader) | ✅ | 77efab5 |
+| T04 | `toneguide.py` parser | next ⏳ | |
 | T05 | `triage.py` deterministic rules | ⏳ | |
 | T06 | `verifier.py` invention check | ⏳ | |
 | T07 | `llm.py` clients + config loader | ⏳ | |
@@ -21,15 +20,15 @@ Only the builder commits.
 | T10 | `app.py` local web UI | ⏳ | |
 | T11 | Demo fixture set (identity RULED: Ridgeline Plumbing, Cedar Falls) | ⏳ | |
 | T12 | `tools/build_demo.py` + committed `docs/` demo | ⏳ | |
-| T13 | GitHub repo + push + Pages — **blocked: owner Q2 (token)** | 🔒 | |
+| T13 | GitHub repo + push + Pages — owner ruled D7-B: he runs the token script himself; unblocks on his timing | ⏳ | |
 | T14 | Online path (`--online`, `HttpLLM`) | ⏳ | |
-| T15 | Refresh canned drafts — **blocked: owner Q3 (endpoint)** | 🔒 | |
+| T15 | Refresh canned drafts — blocked: endpoint ruling (D3, presented to owner) | 🔒 | |
 | T16 | Screenshots into `docs/` | ⏳ | |
 | T17 | Custom domain replydeskhq.tech — **blocked: owner Q4 (DNS)** | 🔒 | |
 | T18 | Final offline + privacy audit | ⏳ | |
 | ARCH | `ARCHITECTURE.md` + `TASKS.md` produced (architect-1) | ✅ | rides T01 |
 
-**STATE:** Tue Oct 13 PM. D1 RULED (Ridgeline Plumbing, Cedar Falls) → T11/T12 unblocked. T01 ✅ 678e93a, T02 ✅ 809e2b5; lane continues T03→T10 (offline, unblocked). Pending decisions, presented one at a time: D7 credentials (presented), then endpoint (D3), publish slot (D2), DNS (D8), first-user (D9), triage-assist scope (D5), compression (D6), authorship (D4), DEV login (D10).
+**STATE:** Tue Oct 13 PM. D1 RULED (Ridgeline Plumbing, Cedar Falls). D7 RULED (owner runs the token script himself; T13 unblocks on his timing). T01 ✅ 678e93a · T02 ✅ 809e2b5 · T03 ✅ 77efab5 (19 tests, offline). Lane: T04 next. Pending decisions, one at a time: D3 endpoint (presented now; clock Thu PM), then publish slot (D2), first-user (D9), DNS (D8), triage-assist (D5), compression (D6), authorship (D4), DEV login (D10).
 
 ---
 

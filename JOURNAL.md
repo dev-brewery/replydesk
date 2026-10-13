@@ -133,3 +133,14 @@ Unblocked meanwhile: T02→T10 offline cadence proceeds regardless of any ruling
 ## 2026-10-13 (Tue) — D7 RULED: owner runs the token script himself
 
 - Owner ruled Option B: he runs `tools/gh-token-to-env.ps1` in a normal PowerShell (`-NoProfile`), per the kit's design. No agent involvement in authentication. T13 (repo/push/Pages), T15 re-push and publish-day remote calls unblock whenever his `.env` carries a valid token — orchestrator checks `gh auth status` before each remote-dependent task and proceeds the moment it passes. Nothing was assigned back to him; the choice and timing are his.
+
+## 2026-10-13 (Tue) — T03 accepted
+
+- Builder session builder-T03 completed T03. Orchestrator verified directly: 3 builder commits (77efab5 latest); suite "Ran 19 tests ... OK" re-run by the orchestrator; `FIXTURE_DATE == 2026-10-12` confirmed; `load_demo_fixtures('no/such/dir')` raises `FixtureError` with a clear message; riding doc updates (guidelines/journal/tracker) committed with the task; worktree clean; no demo fixture files written (correct — that is T11).
+- Lane continues: T04 (toneguide.py) next. Next decision presented to the owner: D3 LLM endpoint.
+
+## 2026-10-13 (Tue) — D3 scoping: owner asked about hardening for a local endpoint
+
+- The owner asked what hardening would be needed to use his local "qwen" endpoint on the LAN (address given in chat only; per privacy rules it never enters repo, briefs, or this journal — referred to as "the local endpoint"; real value lives only in gitignored `.env`).
+- D3 remains open. Hardening answer delivered in chat: app-side deltas (TLS/self-signed tolerance via optional CA-bundle config, tolerate servers that reject `extra_body`, mask endpoint in error strings, input caps + prompt truncation, data-fencing of review text in prompts, startup smoke ping) on top of what the architecture already builds in (300 s timeout, transport retries, labeled template fallback, deterministic triage a model can't un-flag, pure-regex verifier, offline mode never reading `.env`); endpoint-side checklist for his box (API key even on LAN, bind/firewall to trusted machines, optional TLS, request-body logging off, concurrency cap).
+- Model-identity note surfaced: shipped default stays GLM-5.3-Flash per A6/PROJECT.md; a local Qwen endpoint means owner-configured runs serve a different open-weight model — fine under "configurable endpoint," but the post must name what ran where; demo canned drafts can stay GLM-5.3-Flash. Owner's call within D3.
