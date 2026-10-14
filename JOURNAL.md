@@ -239,3 +239,26 @@ Unblocked meanwhile: T02→T10 offline cadence proceeds regardless of any ruling
 - Builder session builder-T11 completed T11. Orchestrator verified: 106 tests OK re-run; `demo_run()` → 8 decisions, 6 drafts all verified, `generated_on == FIXTURE_DATE` (2026-10-12); categories 2 THANK_YOU / 4 FIX_IT / 2 NEEDS_HUMAN — the assist FLIPPED ty-2 (4★ pattern-free) to FIX_IT with an assist-named reason and the two confirms held; both needs-a-human reviews carry pattern reasons and no drafts; all review dates ≤ 2026-10-12; fixtures are fictional throughout (profile exactly as ruled; tone-guide voice + facts sanction the canned commitments). Commit 206a9a1.
 - **Deviation, flagged by the builder and accepted:** T11's acceptance (assist flip in `demo_run()`) required the T14a consult, which no prior task had built — the builder implemented it in `draft.py` exactly to the T14a spec (system prompt, `key="assist:{id}"`, max_tokens 100, one-way flip, malformed/LLMError → deterministic stands) and said so plainly. Accepted: the alternative was fixtures that cannot exercise the ruled D5-B core. T14a's remainder is now its dedicated consult-path unit tests; tracker updated. Two T08 stub-count assertions adjusted per T14a's explicit allowance; ARCHITECTURE's stale "identity pending" wording aligned to D1 (builder edit, correct).
 - Lane continues: T12 (tools/build_demo.py + committed docs/ demo — the Wednesday gate).
+
+## 2026-10-13 (Tue) — T12 accepted; Wednesday-gate content ready
+
+- Builder session builder-T12 completed T12. Orchestrator verified: 112 tests OK re-run; rebuilt `docs/` with `py tools/build_demo.py` → `git diff` clean (byte-deterministic); `docs/index.html` self-contained — zero external URLs, "recorded offline run" banner, pinned 2026-10-12 date, 2 NEEDS HUMAN cards, 4× Ridgeline Plumbing, and zero `[Template reply` occurrences (all six demo drafts are verified MODEL drafts — no fallbacks in the recorded run); `docs/demo_run.json` carries the auditable output (profile/decisions/drafts/date). Commit 3700035.
+- **Gate status: the Wednesday "Pages demo live" milestone is content-complete in `docs/`; only the push (T13) remains, which waits on the owner's GITHUB_TOKEN per D7-B.** Everything else through the demo is done, offline, and verified.
+- Tomorrow's lane: T14 (online wiring — mocked, no key needed), T14a remainder (dedicated assist unit tests), T18 (final audit tooling). T13 fires the moment `gh auth status` passes.
+
+## 2026-10-13 (Tue, ~17:50) — owner's `.env` landed; preflight green; T13 fired
+
+- Owner reports `.env` created (D7-B executed). Orchestrator verified without printing values: all four keys present and non-empty; `GH_TOKEN` from `.env` authenticates `gh api user` → dev-brewery; repo name `dev-brewery/replydesk` free as of 17:48 EDT.
+- LLM endpoint smoke (orchestrator, direct): HTTP 200 on `$LLM_BASE_URL/chat/completions` with model `glm-5.3-flash`; naive `max_tokens=8` returned empty content (the Week-1 reasoning-model trap, exactly as guidelines §10-3 pre-answers) — both `thinking=disabled` and `thinking=low` with an adequate budget return `SMOKE-OK`. The app's call policy (§5) already encodes the fix; T14 wiring will carry it end-to-end.
+- T13 briefed and launched: create `dev-brewery/replydesk` public, push `main`, enable Pages from `/docs`. D8 (DNS) presentation follows verification.
+
+## 2026-10-13 (Tue, ~18:00) — T13 accepted; Wednesday gate met a day early
+
+- Builder session builder-T13 completed T13 (remote-only, no commit). Orchestrator verified directly: repo `PUBLIC`, default branch `main`, remote head `3700035`, 12 commits, first commit `678e93a` dated 2026-10-13 16:01 EDT (inside window, builder-signed); Pages API reports `status: built`, source `main` `/docs`, `html_url` https://dev-brewery.github.io/replydesk/; the live URL returns HTTP 200 serving the committed Ridgeline fixture run over HTTPS.
+- Builder honestly reported one 422 retry (API wants `/docs` with the leading slash). Token never echoed or written.
+- **Milestone: guidelines §8 Wed "GitHub Pages demo live" met on Tuesday.** Buffer restored: one full day.
+- D8 (replydeskhq.tech DNS) now triggered — presented to the owner (single decision). T17 (docs/CNAME + Pages custom domain) executes on that ruling.
+
+## 2026-10-13 (Tue, ~18:10) — D8 RULED: A — apex A records set
+
+- Owner ruled Option A and set the records. Orchestrator verified via local resolver: `replydeskhq.tech` resolves to all four GitHub Pages IPs (185.199.108–111.153); no `www` CNAME (optional, not required for A8). Registrar work complete; everything else is the project's side — T17 briefed and launched (docs/CNAME, push, Pages custom-domain via API, HTTPS verification, POST_DRAFT fallback note once solid).

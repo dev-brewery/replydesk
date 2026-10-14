@@ -64,6 +64,15 @@ class BuildDemoTest(unittest.TestCase):
                     f"{name} not byte-identical across runs",
                 )
 
+    def test_cname_survives_rebuild(self):
+        # T17: Pages serves the custom domain from docs/CNAME; the demo build
+        # must leave it in place when regenerating docs/.
+        with tempfile.TemporaryDirectory() as tmp:
+            cname = Path(tmp) / "CNAME"
+            cname.write_bytes(b"replydeskhq.tech")
+            build_demo(tmp)
+            self.assertEqual(cname.read_bytes(), b"replydeskhq.tech")
+
     def test_json_serializer_deterministic(self):
         self.assertEqual(demo_run_json(self.result), demo_run_json(self.result))
 

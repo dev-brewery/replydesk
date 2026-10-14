@@ -19,8 +19,8 @@ Only the builder commits.
 | T09 | `render.py` HTML output | ✅ | e6fa893 |
 | T10 | `app.py` local web UI | ✅ | d8194dd |
 | T11 | Demo fixture set (identity RULED: Ridgeline Plumbing, Cedar Falls) | ✅ | 206a9a1 |
-| T12 | `tools/build_demo.py` + committed `docs/` demo | next ⏳ | |
-| T13 | GitHub repo + push + Pages — owner ruled D7-B: he runs the token script himself; unblocks on his timing | ⏳ | |
+| T12 | `tools/build_demo.py` + committed `docs/` demo | ✅ | 3700035 |
+| T13 | GitHub repo + push + Pages — owner ruled D7-B: he runs the token script himself; unblocks on his timing | ✅ live | (remote-only) |
 | T14 | Online path (`--online`, `HttpLLM`) | ⏳ | |
 | T14a | Triage assist (core, D5-B): consult landed in T11; remainder = dedicated unit tests | ⏳ | 206a9a1 (partial) |
 | T15 | Refresh canned drafts — endpoint RULED (D3-A z.ai); runs once the owner's key sits in `.env` | ⏳ | |
@@ -29,7 +29,7 @@ Only the builder commits.
 | T18 | Final offline + privacy audit | ⏳ | |
 | ARCH | `ARCHITECTURE.md` + `TASKS.md` produced (architect-1) | ✅ | rides T01 |
 
-**STATE:** Tue Oct 13 PM. Offline spine + fixtures DONE (T01–T11 ✅, 106 tests, 11 commits). demo_run(): 8 decisions, 6 verified drafts, assist flip live, needs-a-human undrafted. All unconditional decisions RULED (D1, D2-B, D3-A, D4-A, D5-B, D7-B, D9-A); D8/D10/D6 conditional. Lane: T12 (docs demo — Wed gate; push waits on owner token) → T13 (blocked on token) → T14/T14a-remainder.
+**STATE:** Tue Oct 13 ~18:00. **WEDNESDAY GATE MET EARLY:** repo public + pushed (12 commits, first 678e93a in-window), Pages built from /docs, live demo serving the Ridgeline run at dev-brewery.github.io/replydesk. LLM endpoint smoke-verified (thinking-mode trap confirmed + handled). T01–T13 ✅. Remaining lane: T14, T14a-remainder, T16, T17 (awaits D8), T18, T15 (Thu). Open decision: D8 DNS (presented). Queued: D10 (Fri), D6 (if slipped — none have).
 
 ---
 
