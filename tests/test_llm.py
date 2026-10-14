@@ -72,7 +72,9 @@ class HttpLLMTests(unittest.TestCase):
         self.assertEqual(body["model"], "fake-model")
         self.assertEqual(body["max_tokens"], 400)
         self.assertEqual(body["temperature"], 0.3)
-        self.assertEqual(body["extra_body"]["thinking"]["value"], "low")
+        # OpenAI convention: extra fields merge at the TOP LEVEL, never nested.
+        self.assertNotIn("extra_body", body)
+        self.assertEqual(body["thinking"], {"type": "enabled", "value": "low"})
         self.assertEqual(body["messages"][0]["content"], "sys prompt")
         self.assertEqual(body["messages"][1]["content"], "usr prompt")
         self.assertIn("fake.example/v1/chat/completions",
@@ -117,6 +119,21 @@ class HttpLLMTests(unittest.TestCase):
                         self.assertNotIn(s, text)
                 except Exception as exc:  # pragma: no cover
                     self.fail(f"non-LLMError escaped: {exc!r}")
+
+    def test_empty_content_retried_then_llm_error(self):
+        responses = [_resp(_ok_payload("")),
+                     _resp(_ok_payload("   ")),
+                     _resp(_ok_payload(None))]
+        with mock.patch("urllib.request.urlopen", side_effect=responses):
+            with self.assertRaises(LLMError) as ctx:
+                self._client(attempts=3).complete("s", "u", key="k", max_tokens=10)
+        self.assertIn("empty completion", str(ctx.exception))
+
+    def test_empty_content_never_returned(self):
+        with mock.patch("urllib.request.urlopen",
+                        return_value=_resp(_ok_payload(""))):
+            with self.assertRaises(LLMError):
+                self._client(attempts=1).complete("s", "u", key="k", max_tokens=10)
 
     def test_malformed_response_raises_llm_error(self):
         with mock.patch("urllib.request.urlopen",

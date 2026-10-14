@@ -18,6 +18,15 @@ def check(draft: str) -> Verification:
 
 
 class TestVerifier(unittest.TestCase):
+    def test_empty_draft_fails(self):
+        result = check("")
+        self.assertFalse(result.passed)
+        self.assertIn("empty draft", result.violations)
+
+    def test_whitespace_draft_fails(self):
+        result = check("  \n\t ")
+        self.assertFalse(result.passed)
+        self.assertIn("empty draft", result.violations)
     def test_all_traceable_passes(self):
         v = check("Thanks, Marlene! We open at 7am and we honor refunds.")
         self.assertTrue(v.passed)

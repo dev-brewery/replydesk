@@ -130,6 +130,19 @@ class TestRun(unittest.TestCase):
         human = [d for d in result.decisions if d.review.review_id == "r-human"][0]
         self.assertEqual(human.category, TriageCategory.NEEDS_HUMAN)
 
+    def test_empty_completions_yield_template_drafts(self):
+        """Client whose completions are all empty (post-fix: LLMError) never
+        produces empty MODEL drafts; drafts fall back to labeled templates."""
+        client = StubClient({}, error="empty completion from configured endpoint")
+        result = run(TONE, PROFILE, [REVIEW_GOOD], client, today=TODAY)
+        self.assertEqual(len(result.drafts), 1)
+        draft = result.drafts[0]
+        self.assertEqual(draft.source, DraftSource.TEMPLATE)
+        self.assertFalse(draft.verified)
+        self.assertTrue(draft.text.startswith(FALLBACK_LABEL))
+        self.assertTrue(draft.verifier_notes)
+        self.assertTrue(draft.text.strip())
+
     def test_fixture_llm_offline_run(self):
         client = FixtureLLM({"r-good": GOOD_THANKS, "r-bad": BAD_DRAFT})
         result = run(TONE, PROFILE, [REVIEW_GOOD, REVIEW_BAD], client, today=TODAY)

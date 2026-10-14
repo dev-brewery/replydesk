@@ -57,7 +57,9 @@ class HttpLLM:
             ],
             "max_tokens": max_tokens,
             "temperature": 0.3,
-            "extra_body": {"thinking": {"type": "enabled", "value": "low"}},
+            # OpenAI convention merges extra_body fields into the TOP LEVEL of
+            # the JSON body; sending them nested makes servers ignore them.
+            "thinking": {"type": "enabled", "value": "low"},
         }).encode("utf-8")
 
         last_exc: Exception | None = None
@@ -86,9 +88,14 @@ class HttpLLM:
             # Swallow the body; never let the endpoint URL or key leak.
             raise LLMError(f"HTTP {exc.code} from configured endpoint") from None
         try:
-            return payload["choices"][0]["message"]["content"]
+            content = payload["choices"][0]["message"]["content"]
         except (KeyError, IndexError, TypeError):
             raise LLMError("malformed response from configured endpoint") from None
+        if not content or not content.strip():
+            # Empty content in an otherwise-OK response is retryable (thinking
+            # consumed the budget); never return an empty completion.
+            raise LLMError("empty completion from configured endpoint")
+        return content
 
 
 def load_env_config(env_path: str) -> dict:

@@ -93,6 +93,9 @@ def verify_draft(
     profile: BusinessProfile,
 ) -> Verification:
     """Check that numbers, names, and commitments in the draft trace to sources."""
+    if not draft_text or not draft_text.strip():
+        # An empty draft must never pass vacuously (defense in depth).
+        return Verification(passed=False, violations=("empty draft",))
     sources = _sources(tone_guide, review, profile)
     sources_lower = sources.lower()
     violations: list[str] = []
