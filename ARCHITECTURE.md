@@ -29,7 +29,10 @@ replydesk/                  # python package
       tone_guide.md         #   demo tone guide (voice + facts)
       reviews.json          #   8 synthetic reviews, dates <= FIXTURE_DATE
       canned_drafts.json    #   offline "model" replies, keyed by review_id
-app.py                      # local web UI (stdlib http.server), default offline
+app.py                      # local web UI (stdlib http.server), default offline;
+                            # --serve-api starts the §12 JSON bridge instead
+replydesk/api.py            # T22: /api/draft bridge: CORS allowlist, request caps,
+                            # runresult_json serializer (shared with build_demo)
 tests/                      # offline suite; network always mocked; inline neutral literals
 tools/
   build_demo.py             # regenerate docs/ demo output from fixtures (deterministic)
@@ -37,17 +40,31 @@ tools/
   final_audit.py            # fresh-clone offline sim + privacy-pattern scan (T18)
   gh-token-to-env.ps1       # kit tool (owner-run)
   screenshot.sh / trim_png.py  # kit tools
-docs/                       # GitHub Pages root: generated index.html, demo_run.json, *.png
+  run_tunnel.ps1 / .sh      # T23: cloudflared quick-tunnel start + service.json writer
+  TUNNEL.md                 #   session runbook (bridge -> tunnel -> commit -> push)
+docs/                       # GitHub Pages root
+  index.html                #   recorded no-JS demo page (§8; untouched by T21+)
+  demo_run.json             #   committed fixture output
+  CNAME, *.png              #   custom domain + post screenshots
+  app/                      #   T21: hosted product SPA (§11) — vanilla JS allowed
+    index.html              #     markup + inline CSS + UI wiring
+    rd.js                   #     pure logic ports: parse/triage/template + auth helpers
+    service.json            #     T23: {"status","url"} tunnel pointer (committed)
 kit files                   # AGENTS.md, PROJECTGUIDELINES.md, ACCEPTANCE_CRITERIA.md,
                             # PROJECT.md, IMPLEMENTATIONPLAN.md, JOURNAL.md, TASKS.md,
                             # ARCHITECTURE.md, POST_DRAFT.md, POST_TEMPLATE.md,
                             # CHECKLIST.md, LICENSE, .env.example, .gitignore,
                             # .gitattributes, hooks/, .pi/, .privacy-patterns.example
-out/                        # gitignored: orchestrator briefs + sub-agent stdout
+out/                        # gitignored: orchestrator briefs + sub-agent stdout +
+                            # out/bin/cloudflared binary (T23; never committed)
 ```
 
-Not in the map (out of scope, guidelines §3): auto-posting, scraping, accounts/billing,
-hosted backend, partner integrations beyond the .tech domain.
+Not in the map (out of scope, guidelines §3 as amended 2026-10-14): auto-posting,
+scraping, a hosted backend beyond the session-window bridge of §12, any payment
+collection (no card form, no provider — founding trial gate only), partner
+integrations beyond the .tech domain. Accounts exist as the browser-local sign-up +
+trial gate of §11 exactly as the amendment rules; there is no server-side account
+store.
 
 ---
 
@@ -251,7 +268,26 @@ serves the fixture run read-only. Modes: **offline** (default; triage runs, draf
 come straight from the labeled template path with an "offline mode" note; never
 touches `.env`), **demo** (fixtures via `FixtureLLM`), **online** (`--online`; reads
 `.env` via `load_env_config` → `HttpLLM`, 300 s timeout, labeled template fallback on
-any client error).
+any client error), and **serve-api** (`--serve-api`; runs the `replydesk/api.py`
+bridge of §12 instead of the form UI — implies the online client; uses the same
+`--host/--port/--env` arguments).
+
+### `replydesk/api.py` (T22)
+
+```python
+ALLOWED_ORIGINS = ("https://replydeskhq.tech", "https://dev-brewery.github.io")
+CAPS = {"MAX_BODY_BYTES": 262_144, "MAX_TONE_CHARS": 4_000, "MAX_REVIEWS": 20,
+        "MAX_REVIEW_CHARS": 2_000, "MAX_PROFILE_CHARS": 60}   # one auditable table
+
+def runresult_json(run, *, note: str = "") -> str
+    # the demo_run.json schema (tools/build_demo.demo_run_json becomes a thin
+    # wrapper; committed docs/ output stays byte-identical) + "note" banner field
+    # (present only when non-empty)
+
+def make_api_server(host: str, port: int, client) -> ThreadingHTTPServer
+```
+
+Full endpoint contract in §12.
 
 ---
 
@@ -514,6 +550,13 @@ come from this page and the app UI via `tools/screenshot.sh` only (binary-safe; 
 | Custom-domain DNS misses publish (§10 Q4) | Post links the github.io URL as fallback; domain swap is a one-line edit + re-push. |
 | Core triage-assist adds one LLM call per thank-you review (latency, failure surface) | Single call, `max_tokens=512`, no assist-level retry; malformed output / error / fixture miss → deterministic result stands; offline and demo never consult the network (§5, §7). |
 | Heuristic page-paste parser mis-reads a real page copy (T19) | Anchor on star ratings only; conservative numeric forms; scaffolding (names/dates) and noise dropped, never injected into `Review.text`; <1 usable review → manual-lines fallback hint (no dead end); synthetic Google/Yelp-shape tests plus local validation against a gitignored real-shape sample; worst case = manual lines, which still work. |
+| cloudflared absent on this box; quick-tunnel download blocked (T23) | One-time anonymous fetch of the official release binary inside `run_tunnel.*`; failure → honest `{"status":"unavailable"}` + non-zero exit; the SPA's offline path (§11) keeps the hosted app usable; nothing blocks the post. |
+| GitHub Pages edge-caches `service.json` (~10 min) and rebuilds lazily | Session runbook (`tools/TUNNEL.md`) starts the tunnel ≥ 15 min before the session; SPA cache-busts the fetch (`service.json?t=<now>`); URL rotation rides the same commit → push → rebuild cycle. |
+| Tunnel URL is public and unauthenticated (T23) | Request caps (§12), loopback-only bind, ephemeral unguessable trycloudflare URL, short session window, key stays server-side in `.env`; CORS constrains browsers only and is framed honestly as such. |
+| JS ports (`rd.js`) drift from their Python counterparts | Ports copy the pattern tables verbatim; node tests run the same synthetic shapes as the Python suite (parity is the acceptance bar); server re-validates caps; server-side decisions are authoritative whenever the service is up. |
+| Browser-local accounts read as a security claim | Verbatim honest copy at sign-up (§11); no security claims anywhere; SPA holds no key material — generation is server-side or clearly-labeled template. |
+| Worst-case bridge latency (20 reviews × retry ladder) exceeds SPA patience | SPA aborts at 420 s and degrades to the labeled template path with the offline note (never a dead end); runbook suggests ≤ 15 reviews per run; observed live latency ~22 s/review. |
+| T24 needs a real browser from the builder session | Browser automation is available to sessions (used for page captures); if unavailable, the builder reports, the orchestrator drives the browser, and the builder commits the artifacts — one commit either way. |
 
 ## 10. Pending owner determinations wired into this design
 
@@ -522,3 +565,171 @@ come from this page and the app UI via `tools/screenshot.sh` only (binary-safe; 
 3. LLM endpoint + key for `.env` → gates T14/T14a/T15 online runs (code lands mocked either way).
 4. `replydeskhq.tech` DNS → gates T17 (domain verification); fallback URL everywhere.
 5. First-user logistics + Sat publish slot → schedule only; no code impact.
+6. **§3 amendment (2026-10-14) is itself the owner ruling** for T21–T24: sign-up
+   mandatory, first user on a hosted URL, existing repo/machine/endpoint only,
+   founding-trial billing, no new accounts/services/sign-ins. **No further owner
+   determination gates the build.** Architect discretions exercised inside that
+   ruling (reversible, on record): SPA at `/app/` with the recorded demo kept at `/`
+   (the brief allowed either); CORS allowlist extended with the
+   `dev-brewery.github.io` Pages origin (testing + fallback; one-line removal);
+   PBKDF2 100 000 iterations (tunable constant); SPA draft textareas editable
+   (product behavior; the recorded demo page stays read-only).
+
+---
+
+## 11. Hosted product SPA — `docs/app/` (§3 amendment; T21)
+
+The owner ruling (guidelines §3, amended 2026-10-14): sign-up is mandatory; the first
+user's run happens on a hosted URL; only the existing repo (GitHub + Pages at
+replydeskhq.tech), this machine, and the existing z.ai endpoint may be used. The SPA
+is the fastest honest build inside those constraints.
+
+**Routing (architect call, per brief):** the SPA lives at **`/app/`** — Pages serves
+`docs/app/index.html` at `replydeskhq.tech/app/` (and the github.io fallback). The
+recorded offline demo stays at `/` exactly as §8 specifies; A8/D4/D5 anchors, the
+post's demo link, and existing screenshots keep working. No T21+ task touches
+`docs/index.html` or `tools/build_demo.py` output (see the §8 JS boundary).
+
+**Files.**
+
+```
+docs/app/index.html   # single page: inline CSS, no frameworks, no build step, no
+                      # external CDNs/assets; view switching; loads rd.js relatively
+docs/app/rd.js        # pure logic (no DOM): parser/triage/template ports + auth and
+                      # card-render helpers; runs under node (module.exports) and
+                      # browser (window.rd) for the §11 test harness
+docs/app/service.json # T23: {"status":"available","url":"https://…trycloudflare…"}
+                      # or {"status":"unavailable"} — committed; public by design
+```
+
+The SPA's only network activity: same-origin `service.json` (cache-busted,
+`service.json?t=<now>`) and, when it says `available`, the `/api/draft` POST to the
+URL it carries (§12). `index.html` and `rd.js` contain no absolute URLs and no
+key/endpoint material — the tunnel origin is data, not code.
+
+### `rd.js` contract — ports, not rewrites
+
+Each port mirrors its Python counterpart's behavior and pattern tables (tables at
+module top, like `triage.py`):
+
+- `parsePaste(text)` → `[{review_id, stars, text}]` — port of
+  `paste_parse.parse_paste`: manual `N |` lines (same error messages, thrown as an
+  `Error` named ReviewsFormatError-equivalent) and never-raising page mode — glyph
+  runs ★/☆/⭐ with Google private-use **U+E838 as a full star**, row fillers
+  U+E8DC/U+E80D/U+E5D4/U+E88E neutral, ½ floors down, conservative numeric anchors
+  (`4/5`, `4 out of 5`, `Rated 4/5`), scaffolding (relative + calendar dates,
+  2–4 title-case names) dropped, noise table (owner-response, UI strings, counts,
+  badges) dropped, trailing-noise rule, `[]` on nothing usable, ids `p1, p2, …`.
+- `triageReview(review)` → `{category, reason}` — port of the **deterministic**
+  `triage.py` table only (§4, incl. trade/service staff roles; the LLM assist does
+  not exist client-side). Used by the offline path; when the service is up, the
+  server's decisions are authoritative.
+- `templateReply(decision, profile)` + `FALLBACK_LABEL` — port of
+  `draft.template_reply` (same neutral strings + profile/review echo; the caller
+  prepends the label, mirroring `run()`).
+- auth helpers: `hashPassword(password, saltHex)` — WebCrypto PBKDF2-SHA-256,
+  100 000 iterations, 16-byte salt, 32-byte key, hex out (`crypto.subtle` exists in
+  all Pages-served browsers and node ≥ 19); `equalHex` constant-time compare;
+  account store over an injected storage shim (`localStorage` in the browser).
+
+**Tests (offline):** `tests/js/*.test.js` run under node's built-in runner
+(`node --test tests/js/`) from `tests/test_spa_js.py` via subprocess — **skipped,
+not failed, when `node` is absent**. Parity is the acceptance bar: the same neutral
+synthetic Google/Yelp-shape inputs as the Python suite produce the same
+stars/text/category/template output in JS.
+
+### SPA flow (views inside one page)
+
+1. **Sign up / log in** — name, email (shape-checked), password (≥ 8 chars);
+   duplicate email rejected; login failure shows one generic message. Accounts in
+   `localStorage` (`rd_accounts`: email → {name, salt, hash}); session flag
+   `rd_session`; log out clears the session only. **Honest copy at sign-up
+   (verbatim): "Your account lives in this browser — we'll move it to the service
+   when we launch."** Browser-local auth is convenience, not a security boundary;
+   the SPA never claims otherwise.
+2. **Plan gate** — card: "Founding plan — $9/month. First month free for founding
+   members." Button **Activate trial** → sets `trialActivatedOn` on the account →
+   generation enabled. Sub-line (verbatim): "We'll invoice you by email before the
+   first charge. No card needed now." No card form anywhere (§3 amendment:
+   invoiced later; no provider exists inside the constraint set).
+3. **Workspace** — tone-guide textarea with `app.py`'s exact headings hint and
+   placeholder text; three optional one-line business fields (name / kind / city,
+   ≤ 60 chars each, defaulted to `app.py`'s neutral default profile — the fields
+   steer the draft prompt's profile slot); reviews paste box with the page-paste
+   guidance; live **found-reviews preview** (count + stars + first-line excerpts)
+   via `parsePaste`; zero found → the manual-lines fallback hint (T20's copy).
+4. **Draft replies** (enabled only when signed in + trial active) — fetch
+   `service.json?t=<now>`; on `available`, POST `{tone, profile, reviews}` to
+   `<url>/api/draft` (JSON; AbortController timeout **420 000 ms**); render the
+   response as cards in `render.py`'s visual language: stars (★/☆), triage badges
+   + reasons, draft textareas **editable** (product behavior — the owner edits
+   before copying; the recorded demo page stays read-only), source labels
+   (MODEL / MODEL RETRY / TEMPLATE) + verifier status, `needs_human` cards show
+   the reason and **no** draft box (A3); every user/model string HTML-escaped.
+   Card building lives in `rd.js` as pure string helpers (`renderCards`) joined to
+   the client-side reviews by `review_id` — the API response never echoes review
+   text back. On `unavailable`, fetch failure, or timeout: the **offline path** —
+   `triageReview` + labeled `templateReply` per non-human review, with the note
+   (verbatim): "Service offline — replies below are editable templates." Never a
+   dead end.
+
+The SPA performs **no generation locally** and holds no key material: generation is
+the §12 bridge or clearly-labeled templates.
+
+---
+
+## 12. Generation bridge + session tunnel (T22/T23)
+
+**`app.py --serve-api`** (existing `--host/--port/--env` args; runbook uses
+`--port 8787`, loopback bind) starts a `ThreadingHTTPServer` from
+`replydesk/api.py` running the existing online pipeline. `--serve-api` implies the
+online client via `online_client()`; if the client cannot be built, the server
+still starts and every `/api/draft` responds 503 `{"error": "service unavailable"}`
+— the bridge never crashes on configuration.
+
+**`POST /api/draft`** — request JSON:
+`{tone: str, profile?: {name, kind, city}, reviews: [{review_id, stars, text}]}`
+(`review_id` matches `^[a-z0-9-]{1,16}$`, preserved verbatim so the SPA can join;
+reviews arrive pre-parsed by the SPA's `parsePaste`, so the previewed set and the
+drafted set cannot drift — the server re-validates shape and caps regardless).
+Validate against the `CAPS` table (§2): violations → 400/413 JSON errors naming the
+cap; user text is never echoed in errors. Valid request → the unchanged spine:
+`parse_tone_guide` → `triage_all` (+ assist per §5) → `draft.run` →
+`runresult_json`. Any unexpected exception → 500 JSON naming only the failure
+class. **Logs carry status + counts only — review/tone text is never logged.**
+
+**`OPTIONS /api/draft`** — preflight: `Access-Control-Allow-Origin` echoes the
+request origin **only if** it is in `ALLOWED_ORIGINS` (`https://replydeskhq.tech`,
+`https://dev-brewery.github.io` — the Pages fallback origin, same service); methods
+`POST, OPTIONS`; headers `Content-Type`; max-age 600. No wildcard, no credentials.
+
+**Timeouts and load.** Each `HttpLLM` call keeps the §5 policy (300 s, ≤ 3 transport
+attempts). `MAX_REVIEWS = 20` bounds a request; observed live latency is
+~22 s/review, so a 10–15-review run completes in minutes; the SPA's 420 s abort
+covers the practical window (theoretical worst case is larger — the runbook
+suggests ≤ 15 reviews per run; degradation is the labeled template path, never a
+crash or a hang without an answer).
+
+**Honest CORS note.** The allowlist constrains browsers, not scripts; the endpoint's
+real guards are the caps, the loopback bind, the unguessable ephemeral tunnel URL,
+and the short session window. The API key stays in `.env` on this box and never
+appears in any response or log.
+
+**Session tunnel (T23).** `tools/run_tunnel.ps1` (primary; `.sh` mirror):
+1. ensure the cloudflared binary at `out/bin/cloudflared[.exe]` (gitignored; if
+   absent, **download the official release binary — a one-time anonymous fetch, no
+   account, no sign-in**; quick tunnels are accountless by design; on download
+   failure write `{"status":"unavailable"}` and exit non-zero with a clear message);
+2. start the bridge (`py app.py --serve-api --port 8787`) unless that port already
+   answers;
+3. run `cloudflared tunnel --url http://127.0.0.1:8787 --no-autoupdate` and capture
+   the printed `https://<random>.trycloudflare.com` URL;
+4. write `docs/app/service.json` — `{"status":"available","url":…}` on success,
+   `{"status":"unavailable"}` on any failure; a `-Stop` mode writes unavailable.
+
+`tools/TUNNEL.md` is the runbook: start tunnel → builder commits `service.json` →
+orchestrator push → wait out the Pages rebuild + ~10-min edge cache (**start ≥ 15 min
+before the session**) → verify `replydeskhq.tech/app/` shows the live service →
+session → flip to `unavailable` → commit + push. The trycloudflare URL is public and
+ephemeral by design (it dies with the process) and carries no owner-infrastructure
+details; the pre-commit privacy guard applies to every commit as always.

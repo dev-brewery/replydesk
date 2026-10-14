@@ -26,10 +26,12 @@ Only the builder commits.
 | T15 | Refresh canned drafts from real run | ✅ | 90cbc12 |
 | T16 | Screenshots into `docs/` | ⏳ | |
 | T17 | Custom domain replydeskhq.tech — D8-A ruled, records set by owner | ✅ live | cdd4c30, ffb5cc3 |
-| T18 | Final offline + privacy audit | ⏳ | |
+| T18 | Final offline + privacy audit | ⏳ Fri | |
+| T19 | Page-paste parser (Google/Yelp page copy or manual lines) | ✅ | 6d34f14, 9f5ea3c |
+| T20 | Self-explaining UI (page-paste flow + found-reviews preview) | ✅ | cfce68a |
 | ARCH | `ARCHITECTURE.md` + `TASKS.md` produced (architect-1) | ✅ | rides T01 |
 
-**STATE:** Wed Oct 14 PM. **Thursday-ready:** online path live-verified twice (T14 chain + T15 real-run refresh); demo carries 5 real model drafts + 3 real assist outcomes, all green (139 tests). Awaiting owner push ×4 (incl. docs/ — live demo upgrades on push). Thursday: first-user session evening (owner recruits; blurb supplied). Friday: T16 screenshots, T18 audit, post complete, D10 DEV-login check. Sat: publish 1 PM PDT target / 6 PM hard stop.
+**STATE:** Wed Oct 14 night. **Corrective product work done & pushed** (owner feedback: paste-per-review not payable): T19 page-paste parser (real Google shape captured live; U+E838 glyph defect found by verification and fixed) + T20 self-explaining UI (3-step header, no-account line, found-reviews preview). 163 tests green. Remote = local at 9f5ea3c. Thursday: morning full online dress-run with a real page-paste; evening first-user session (owner recruits). Friday: T16 screenshots, T18 audit, post, D10. Sat: publish 1 PM PDT target / 6 PM hard stop.
 
 ---
 

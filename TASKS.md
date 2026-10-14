@@ -15,6 +15,11 @@ Blocked-on-owner register: **T13** (GITHUB_TOKEN, §10 Q2) · **T15** (z.ai key
 presence in `.env`; endpoint ruled D3-A) · **T17** (DNS, §10 Q4). T11's identity is
 RULED (D1, 2026-10-13; guidelines §10 Q1). Everything else runs unblocked today.
 
+T21a–T24 (added per the guidelines §3 amendment of 2026-10-14, brief architect-5):
+**unblocked** — the amendment is itself the owner ruling (hosted sign-up product,
+founding-trial gate, existing repo/machine/endpoint only). T24 executes inside the
+orchestrator's live session window per `tools/TUNNEL.md` (ARCHITECTURE §12).
+
 | ID | Task | Depends | Blocked | AC |
 |---|---|---|---|---|
 | T01 | Scaffold + LICENSE + first commit of the whole tree | — | — | A11, D6 |
@@ -38,6 +43,14 @@ RULED (D1, 2026-10-13; guidelines §10 Q1). Everything else runs unblocked today
 | T18 | Final offline + privacy audit (`tools/final_audit.py`) | T12 | — | A7, A9, A10 |
 | T19 | `paste_parse.py` smart page-paste parser | T10 | — | A1, A10 |
 | T20 | Self-explaining UI: 3-step flow, preview, privacy copy | T19 | — | A1, A7, A9 |
+| T21a | `docs/app/rd.js`: `parsePaste` JS port + node test harness | T19 | — | A1, A10 |
+| T21b | SPA shell + sign-up/log-in/session (WebCrypto PBKDF2) | T21a | — | §3-AM |
+| T21c | Plan gate (founding trial) + workspace + found-reviews preview | T21a, T21b | — | A1, §3-AM |
+| T21d | `rd.js`: deterministic triage + template ports | T21a | — | A2, A3, A5 |
+| T22 | `app.py --serve-api` JSON bridge (`replydesk/api.py`) | T14 | — | A5, A6 |
+| T21e | Draft flow: `service.json` → `/api/draft` → cards; offline path | T21c, T21d, T22 | — | A4, A5, D5 |
+| T23 | Tunnel tooling + `service.json` + runbook (`run_tunnel.*`, `TUNNEL.md`) | T22 | — | §3-AM, D5 |
+| T24 | Hosted end-to-end verification + screenshots (synthetic account) | T21e, T23 | session | B1, D4, D5 |
 
 Ordering rationale (guidelines §9): offline demo spine T01–T12 lands before anything
 remote; the A5 verifier + fallback (T06/T08) lands before Thursday's first-user
@@ -48,6 +61,16 @@ parallel-safe with render/app work. T19/T20 (owner product ruling 2026-10-14
 evening: manual per-review paste is not a payable flow — both in existing scope,
 no criteria changes) land before Thursday evening's first-user session; T19 is a
 pure parser the app layer consumes in T20.
+
+T21a–T24 (guidelines §3 amendment 2026-10-14, brief architect-5 — the hosted
+sign-up product; contracts in ARCHITECTURE §11/§12): T21a, T21b, T21d touch only
+`docs/app/` pure logic and **parallelize with T22** (`replydesk/api.py` + a small
+`app.py` edit — no shared files); T21c then T21e wire the SPA serially (both edit
+`docs/app/index.html`); T23 needs T22's bridge to point at; T24 runs last, inside
+the live session window, as the synthetic dress rehearsal for Thursday evening's
+first-user session — its screenshots double as T16's app-UI evidence. The recorded
+demo page at `/` is untouched throughout (ARCHITECTURE §8 JS boundary). §3-AM = the
+§3 amendment (sign-up mandatory, hosted first-user run, founding-trial gate).
 
 ---
 
@@ -341,3 +364,175 @@ pure parser the app layer consumes in T20.
   found count before drafting (T19's deferred acceptance), and the zero-found
   fallback hint; existing behavior (offline note, `[Template` labels, loopback
   bind, `.env` untouched offline) unchanged.
+
+## T21a — `docs/app/rd.js`: `parsePaste` port + JS test harness
+
+- **Goal:** Per ARCHITECTURE §11: create `docs/app/rd.js` — a pure-logic module (no
+  DOM) that runs under node (`module.exports`) and browser (`window.rd`) — exposing
+  `parsePaste(text)` as a behavior port of `paste_parse.parse_paste`: manual
+  `N | text` lines (same error messages, thrown as an Error) and never-raising
+  page mode — glyph anchors incl. Google private-use **U+E838** as a full star with
+  U+E8DC/U+E80D/U+E5D4/U+E88E neutral fillers, ½ floors down, conservative numeric
+  anchors, scaffolding (dates, 2–4 title-case names) dropped, noise table
+  (owner-response, UI strings, counts, badges) dropped, trailing-noise rule, `[]`
+  on nothing usable, ids `p1, p2, …`; pattern tables at module top mirroring
+  `paste_parse.py`. Test harness: `tests/js/` (node `--test` files using the same
+  neutral synthetic Google/Yelp-shape literals as `tests/test_paste_parse.py`) and
+  `tests/test_spa_js.py` running `node --test tests/js` via subprocess, **skipping
+  cleanly when `node` is absent**. No network, no DOM, no `docs/index.html` change.
+- **Files:** `docs/app/rd.js`, `tests/js/parse.test.js`, `tests/test_spa_js.py`.
+- **Acceptance:** Suite green offline; with node present, JS tests pass and prove
+  parity with the Python parser on the shared shapes (same stars/text); without
+  node they skip, not fail.
+
+## T21b — SPA shell + sign-up/log-in/session
+
+- **Goal:** Per ARCHITECTURE §11: `docs/app/index.html` — single page (inline CSS,
+  no frameworks, no external CDNs/assets), header + views: sign up / log in /
+  workspace placeholder when logged in. `rd.js` auth helpers: `hashPassword`
+  (WebCrypto PBKDF2-SHA-256, 100 000 iterations, 16-byte random salt hex, 32-byte
+  key hex — `crypto.subtle` exists in all Pages-served browsers and node ≥ 19),
+  `equalHex` constant-time compare, account store over an injected storage shim
+  (`localStorage`: `rd_accounts` email → {name, salt, hash}; session flag
+  `rd_session`; log out clears the session only). Sign-up validates non-empty
+  name, email shape, password ≥ 8 chars, rejects duplicate email; login failure
+  shows one generic message. **Honest copy rendered at sign-up, verbatim:** "Your
+  account lives in this browser — we'll move it to the service when we launch."
+- **Files:** `docs/app/index.html`, `docs/app/rd.js` (extend),
+  `tests/js/auth.test.js`, `tests/test_spa_shell.py`.
+- **Acceptance:** Suite green; node tests cover hash determinism (same salt → same
+  hex; new salt → different) and store round-trip + duplicate-email rejection via a
+  Map-backed shim; Python test asserts the verbatim honest copy, the three form
+  fields, no external URLs, relative `rd.js` load.
+
+## T21c — Plan gate + workspace + found-reviews preview
+
+- **Goal:** Per ARCHITECTURE §11: plan-gate card until activated — "Founding plan —
+  $9/month. First month free for founding members." with button **Activate trial**
+  (sets `trialActivatedOn` on the account) and sub-line verbatim "We'll invoice you
+  by email before the first charge. No card needed now."; no card form anywhere.
+  Workspace (Draft button disabled until signed in + trial): tone-guide textarea
+  with `app.py`'s exact headings hint and placeholder text; three optional
+  business-profile inputs (name / kind / city, 60-char cap, `app.py`'s neutral
+  defaults when blank); reviews paste box with the page-paste guidance; live
+  **found-reviews preview** (count + stars + first-line excerpts) via
+  `rd.parsePaste`; zero found → the manual-lines fallback hint (T20's copy).
+- **Files:** `docs/app/index.html` (extend), `tests/test_spa_workspace.py`.
+- **Acceptance:** Suite green; Python test asserts the verbatim plan strings, the
+  activate-trial gating, preview wiring (`parsePaste` referenced), the zero-found
+  hint, and placeholders matching `app.py`'s; no behavior requires a server
+  (browser-level behavior is T24's live check).
+
+## T21d — `rd.js`: deterministic triage + template ports
+
+- **Goal:** Per ARCHITECTURE §11: port the **deterministic** triage table
+  (`triage.py`, ARCHITECTURE §4 — same ordered groups, same patterns incl.
+  trade/service staff roles, same reasons, ambiguity → cautious) as
+  `rd.triageReview(review) → {category, reason}` (categories `thank_you|fix_it|`
+  `needs_human`; no LLM assist client-side), and `draft.template_reply` as
+  `rd.templateReply(decision, profile)` + `rd.FALLBACK_LABEL` (same neutral
+  strings; caller prepends the label). Pattern tables at module top mirroring
+  `triage.py` / `draft.py`.
+- **Files:** `docs/app/rd.js` (extend), `tests/js/triage.test.js`.
+- **Acceptance:** Suite green; node tests mirror `tests/test_triage.py` probes
+  (every rule group; 5-star complaint → fix-it; 1-star refund → needs-human;
+  staff-name probe → needs-human; lowercase role mention → not) plus one golden
+  template-parity case (same decision + profile → exactly the Python
+  `template_reply` output for that sample).
+
+## T21e — Draft flow: `service.json` → `/api/draft` → result cards; offline path
+
+- **Goal:** Per ARCHITECTURE §11/§12: **Draft replies** (enabled when signed in +
+  trial active): fetch same-origin `service.json?t=<now>`; if `available`, POST
+  `{tone, profile, reviews}` to `<url>/api/draft` (JSON) with an AbortController
+  timeout of 420 000 ms; render the response as cards in `render.py`'s visual
+  language — stars, triage badges + reasons, **editable** draft textareas, source
+  labels (MODEL / MODEL RETRY / TEMPLATE) + verifier status, `needs_human` cards
+  show reason and no draft box (A3), all strings HTML-escaped; cards join the
+  response to the client-side reviews by `review_id` (the API never echoes review
+  text). On `unavailable`, fetch failure, or timeout: offline path —
+  `rd.triageReview` + labeled `rd.templateReply` per non-human review with the
+  verbatim note "Service offline — replies below are editable templates." Card
+  building lives in `rd.js` as pure string helpers (`renderCards`) — node-testable;
+  `index.html` only wires events/DOM. No absolute URLs in either file.
+- **Files:** `docs/app/index.html` (extend), `docs/app/rd.js` (extend),
+  `tests/js/render.test.js`, `tests/test_spa_flow.py`.
+- **Acceptance:** Suite green; node tests: `renderCards` escapes `<script>` input,
+  badges/labels present, needs-human card has no textarea, template label
+  verbatim; Python test: `index.html`/`rd.js` contain the verbatim offline note,
+  reference `service.json` with a cache-buster, and contain no absolute URLs.
+
+## T22 — `app.py --serve-api`: JSON generation bridge
+
+- **Goal:** Per ARCHITECTURE §12: new `replydesk/api.py` — `ALLOWED_ORIGINS`, the
+  `CAPS` table (MAX_BODY_BYTES 262 144, MAX_TONE_CHARS 4 000, MAX_REVIEWS 20,
+  MAX_REVIEW_CHARS 2 000, MAX_PROFILE_CHARS 60), `runresult_json(run, note="")`
+  (demo_run.json schema + optional `note`; `tools/build_demo.py`'s
+  `demo_run_json` becomes a thin wrapper so committed `docs/` output stays
+  byte-identical), `make_api_server(host, port, client)`:
+  `POST /api/draft` validates `{tone, profile?, reviews:[{review_id, stars, text}]}`
+  (`review_id` matches `^[a-z0-9-]{1,16}$`, preserved) against caps (400/413 JSON
+  errors naming the cap; user text never echoed) → `parse_tone_guide` →
+  `draft.run` (triage + assist + verify, unchanged) → `runresult_json`; unexpected
+  errors → 500 JSON naming only the failure class; `OPTIONS` preflight echoes
+  allowlisted origins only (no wildcard). `app.py` gains `--serve-api` (same
+  `--host/--port/--env`; implies the online client via `online_client()`; client
+  unavailable → server still starts, every request 503 JSON). Logs carry status +
+  counts only, never review text.
+- **Files:** `replydesk/api.py`, `app.py` (small edit), `tools/build_demo.py`
+  (wrapper edit), `tests/test_api.py`; regenerated `docs/` must be byte-identical
+  (`git diff` clean).
+- **Acceptance:** Suite green offline (in-process server on an ephemeral loopback
+  port, stub client, no socket beyond loopback, no `.env` read in tests): preflight
+  CORS echo; non-allowlisted origin gets no ACAO header; valid request →
+  schema-correct JSON with note; each cap violation → 400/413 naming the cap;
+  oversized body → 413; `client=None` → 503; `runresult_json(demo_run())`
+  byte-equals `build_demo.demo_run_json(demo_run())`; `py tools/build_demo.py`
+  re-run leaves `docs/` unchanged.
+
+## T23 — Public reach: quick tunnel + `service.json` + runbook
+
+- **Goal:** Per ARCHITECTURE §12: `tools/run_tunnel.ps1` (primary) + `run_tunnel.sh`
+  mirror + `tools/TUNNEL.md`. The script: (1) ensures the cloudflared binary at
+  `out/bin/cloudflared[.exe]` (gitignored; **download the official release binary
+  if absent — anonymous, no account, no sign-in**; on download failure write
+  `docs/app/service.json` = `{"status":"unavailable"}` and exit non-zero with a
+  clear message); (2) starts the bridge (`py app.py --serve-api --port 8787`)
+  unless that port already answers; (3) runs `cloudflared tunnel --url
+  http://127.0.0.1:8787 --no-autoupdate`, capturing the printed
+  `https://…trycloudflare.com` URL; (4) writes `docs/app/service.json`
+  (`{"status":"available","url":…}` or unavailable); `-Stop` mode writes
+  unavailable. `TUNNEL.md` documents the runbook incl. the **≥ 15-min lead time**
+  (Pages rebuild + ~10-min edge cache) and the after-session flip to unavailable.
+  Commit the initial `docs/app/service.json` as `{"status":"unavailable"}`.
+- **Files:** `tools/run_tunnel.ps1`, `tools/run_tunnel.sh`, `tools/TUNNEL.md`,
+  `docs/app/service.json`.
+- **Acceptance:** Suite green (offline, file-level tests: script present with the
+  quick-tunnel command shape and the failure→unavailable path; `service.json`
+  committed as unavailable; `TUNNEL.md` names the lead time). **No test or task
+  step in T23 opens a network connection or downloads anything** — the
+  orchestrator runs the script in the session window. Only the public ephemeral
+  URL ever enters `service.json` (privacy guard applies as always).
+
+## T24 — Hosted end-to-end verification + screenshots (dress rehearsal)
+
+- **Goal:** Per brief architect-5: on the **deployed** Pages URL
+  (`https://replydeskhq.tech/app/`; github.io fallback acceptable), through a real
+  browser session: sign up a synthetic account (fictional name/email), activate the
+  trial, paste a **synthetic** page-dump (reuse the committed Google-shape fixture
+  text), confirm the found-reviews preview, run Draft replies against the live
+  bridge (tunnel up per `tools/TUNNEL.md`), and verify: live MODEL drafts render
+  with source/verifier labels; a needs-a-human review shows its reason and no
+  draft; textareas editable; the honest account/plan copy present. Capture
+  screenshots **only via `tools/screenshot.sh`** (`docs/app-signup.png`,
+  `docs/app-drafts.png`) — these double as T16's app-UI evidence (T16's demo-page
+  screenshot remains separate). If browser automation is unavailable to the
+  builder session, report it; the orchestrator drives the browser and the builder
+  commits the artifacts (one commit either way). Record the tunnel end-state
+  (kept `available` for Thursday evening, or flipped to `unavailable`) in the
+  report.
+- **Files:** `docs/app-signup.png`, `docs/app-drafts.png` (screenshot tool + `cp`).
+- **Acceptance:** PNGs committed as binaries (bytes intact in `git show`),
+  eyeballed, fictional data only (A10); report confirms each live check ran
+  against the hosted URL; suite still green; no real reviews or real accounts
+  involved anywhere.

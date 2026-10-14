@@ -308,6 +308,14 @@ Unblocked meanwhile: T02→T10 offline cadence proceeds regardless of any ruling
 - **Plan (in scope, no criteria changes):** T19 — smart page-paste parser: accept a raw copy of a Google/Yelp reviews page (or the existing manual lines), extract reviews/ratings/dates heuristically, show a found-reviews preview before drafting, fall back to manual lines when parsing finds nothing. T20 — self-explaining UI pass: three-step flow copy, "no account, nothing stored, nothing posted" stated up front, paste-the-page guidance. Post frames connected accounts (official platform APIs) as the paid-product roadmap, honestly — the write-up sells the wedge (replies in the owner's voice) and the open-source story, not a fake SaaS.
 - Reality check for the parser without violating A10 (no real reviews committed): the orchestrator captures the text SHAPE of a public reviews page via Chrome DevTools MCP into gitignored `out/` for local validation only; committed fixtures stay synthetic.
 
+## 2026-10-14 (Wed, night) — corrective arc complete: paste-the-page flow shipped
+
+- Yelp capture attempt: bot-walled (DataDome). Google Maps capture succeeded: reviews panel text shape + live glyph analysis — filled star = U+E838 (25 glyphs = 5 reviews × 5), row icons U+E8DC/E880D/E5D4 as noise. Sample stored gitignored in out/.
+- T19 (6d34f14): parser per spec; 4/4 candidates on the sample shape. T20 (cfce68a): three-step header, "no account / nothing stored / nothing posted" line, found-reviews preview, zero-found hint; a pre-existing CSS double-brace bug fixed en route.
+- Orchestrator verification caught a real defect: the parser knew ★/⭐/☆ but not Google's private-use U+E838 — real page pastes would have parsed to 0 (safe fallback, dead wow-flow). T19fix (9f5ea3c): U+E838 counted as full star, row icons as neutral filler; three probe shapes parse; 163 tests green.
+- End-to-end in-process verification: two-review page-paste → "Found 2 reviews" preview, correct triage (both thank-you class — orchestrator's own probe expectation was wrong, app right), reply cards rendered.
+- Orchestrator push: 90cbc12..9f5ea3c. Remote = local. Thursday morning: full ONLINE dress-run with a real page-paste before the evening session.
+
 ## 2026-10-14 (Wed, PM) — T14a and T15 accepted; Thursday-ready
 
 - T14a (5268488): 15 dedicated assist tests over a recording stub; one flagged code fix accepted — multi-line assist output now malformed per §5's one-line contract (3-line change, tested). 139 tests green.

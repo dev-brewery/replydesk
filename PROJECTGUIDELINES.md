@@ -57,7 +57,9 @@ Core loop (numbered; open-source AI at the core):
 
 Who pays and why: local shops, cafes, salons and contractors live on their reviews but rarely answer them well. Target price ≈ $9/month per business. Because the weights are open, a business or reseller can run replydesk on its own hardware and customer reviews never have to leave it — a closed API can't offer that.
 
-Out of scope (owner-set): auto-posting to any platform, scraping reviews, accounts/billing/hosted backend, any partner integration other than the .tech domain.
+Out of scope (owner-set; **AMENDED 2026-10-14 by Michael's explicit ruling — see below**): auto-posting to any platform, scraping reviews, any partner integration other than the .tech domain.
+
+**AMENDMENT (2026-10-14, owner ruling, overriding prior scope text):** A **sign-up flow is mandatory** — the app must be able to register its first client, and the first user's run must happen on a **hosted URL**, not a local clone. Constraints fixed by the owner: built ONLY from the existing repo (GitHub + Pages at replydeskhq.tech) and the existing machine; **no new accounts, services, or owner sign-ins anywhere**. Billing therefore ships as a founding-plan trial gate (activation required to generate; invoiced later; no card collection — no payment provider exists inside the constraint set), described honestly as such.
 
 ---
 
