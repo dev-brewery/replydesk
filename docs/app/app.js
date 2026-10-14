@@ -251,16 +251,42 @@
     }).join('');
   }
 
+  // CDN caches can split after a push: some nodes serve the old service.json
+  // while others already serve the new one. Retry a few times with a fresh
+  // cache-bust each attempt and take the first config that says 'live'.
+  function fetchServiceConfig(fetchLike) {
+    var MAX_ATTEMPTS = 4;
+    var RETRY_DELAY_MS = 700;
+    var seen = [];
+    function attempt(n) {
+      return fetchLike('service.json?t=' + Date.now())
+        .then(function (res) {
+          return res.ok ? res.json()
+            : { status: 'unavailable', url: null };
+        })
+        .catch(function () { return null; })
+        .then(function (svc) {
+          if (svc && svc.status === 'live') return svc;
+          seen.push(svc);
+          if (n >= MAX_ATTEMPTS) {
+            for (var i = 0; i < seen.length; i++) {
+              if (seen[i]) return seen[i]; // any well-formed config wins
+            }
+            return { status: 'unavailable', url: null };
+          }
+          return new Promise(function (resolve) {
+            setTimeout(resolve, RETRY_DELAY_MS);
+          }).then(function () { return attempt(n + 1); });
+        });
+    }
+    return attempt(1);
+  }
+
   var draftCards = document.getElementById('draft-cards');
 
   draftButton.addEventListener('click', function () {
     draftNote.textContent = 'Drafting…';
-    fetch('service.json?t=' + Date.now())
-      .then(function (res) {
-        return res.ok ? res.json()
-          : { status: 'unavailable', url: null };
-      })
-      .catch(function () { return { status: 'unavailable', url: null }; })
+    fetchServiceConfig(fetch)
       .then(function (svc) {
         return requestDrafts({
           service: svc,
@@ -288,6 +314,7 @@
     requestDrafts: requestDrafts,
     renderCardsInto: renderCardsInto,
     defaultProfile: defaultProfile,
+    fetchServiceConfig: fetchServiceConfig,
     OFFLINE_NOTE: OFFLINE_NOTE
   };
 

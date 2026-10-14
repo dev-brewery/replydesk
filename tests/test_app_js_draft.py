@@ -204,6 +204,39 @@ test('no review text survives unescaped into a textarea', () => {
     'Great &quot;food&quot; &amp; &lt;drink&gt; spot'));
 });
 
+test('CDN split: stale unavailable then live → resolves live in 2 attempts', async () => {
+  const configs = [{ status: 'unavailable', url: null },
+                    { status: 'live', url: 'https://tunnel.example' }];
+  let calls = 0;
+  const svc = await app.fetchServiceConfig(
+    () => Promise.resolve(okJson(configs[calls++])));
+  assert.strictEqual(calls, 2);
+  assert.strictEqual(svc.status, 'live');
+  assert.strictEqual(svc.url, 'https://tunnel.example');
+});
+
+test('CDN split: all four attempts stale → resolves the unavailable config', async () => {
+  const stale = { status: 'unavailable', url: null };
+  let calls = 0;
+  const svc = await app.fetchServiceConfig(() => {
+    calls += 1;
+    return Promise.resolve(okJson(stale));
+  });
+  assert.strictEqual(calls, 4);
+  assert.deepStrictEqual(svc, stale);
+});
+
+test('CDN split: network error then live → resolves live', async () => {
+  const live = { status: 'live', url: 'https://tunnel.example' };
+  let calls = 0;
+  const svc = await app.fetchServiceConfig(() => {
+    if (calls++ === 0) return Promise.reject(new Error('network down'));
+    return Promise.resolve(okJson(live));
+  });
+  assert.strictEqual(calls, 2);
+  assert.deepStrictEqual(svc, live);
+});
+
 (async () => {
   const results = [];
   for (const [name, fn] of tests) {
@@ -237,6 +270,8 @@ class AppJsDraftTests(unittest.TestCase):
             "source labels", "service unavailable", "POST rejection",
             "HTTP 503", "verbatim contract", "profile fields are optional",
             "<script> is escaped", "no review text survives unescaped",
+            "resolves live in 2 attempts", "resolves the unavailable config",
+            "network error then live",
         ):
             self.assertIn(marker, output)
 
