@@ -21,15 +21,15 @@ Only the builder commits.
 | T11 | Demo fixture set (identity RULED: Ridgeline Plumbing, Cedar Falls) | ✅ | 206a9a1 |
 | T12 | `tools/build_demo.py` + committed `docs/` demo | ✅ | 3700035 |
 | T13 | GitHub repo + push + Pages — owner ruled D7-B: he runs the token script himself; unblocks on his timing | ✅ live | (remote-only) |
-| T14 | Online path (`--online`, `HttpLLM`) | ⏳ | |
-| T14a | Triage assist (core, D5-B): consult landed in T11; remainder = dedicated unit tests | ⏳ | 206a9a1 (partial) |
+| T14 | Online path (`--online`, `HttpLLM`) | ✅ live-verified | fb56b36, 7cdabb1, 904d4b8, 8e08331 |
+| T14a | Triage assist (core, D5-B): consult landed in T11; remainder = dedicated unit tests | next ⏳ | 206a9a1 (partial) |
 | T15 | Refresh canned drafts — endpoint RULED (D3-A z.ai); runs once the owner's key sits in `.env` | ⏳ | |
 | T16 | Screenshots into `docs/` | ⏳ | |
 | T17 | Custom domain replydeskhq.tech — D8-A ruled, records set by owner | ✅ live | cdd4c30, ffb5cc3 |
 | T18 | Final offline + privacy audit | ⏳ | |
 | ARCH | `ARCHITECTURE.md` + `TASKS.md` produced (architect-1) | ✅ | rides T01 |
 
-**STATE:** Tue Oct 13 night. **A8 DONE:** demo live at https://replydeskhq.tech/ (HTTPS enforced, Pages built, POST_DRAFT links it primary; github.io fallback). Repo public, 14 commits pushed, first in-window. Remaining lane: T14 (online wiring) → T14a-remainder → T18 (audit) → T16 (screenshots, Fri) → T15 (real-run refresh, Thu after key use begins). D10 (DEV login check) Friday; D6 dormant (no gates slipped). Publish: Sat Oct 17, 1 PM PDT target / 6 PM hard stop.
+**STATE:** Wed Oct 14 midday. **ONLINE PATH LIVE-VERIFIED** (dress rehearsal passed): real glm-5.3-flash drafts, MODEL/MODEL_RETRY verified, live assist flip (ty-2), needs-a-human undrafted, ~22 s/review. Fix chain: thinking params top-level, empty-completion never accepted, budgets 800/512 (architect-3), verifier sentence-start exemption (§6-aligned). 121+ tests green. **Push backlog: 904d4b8 + 8e08331 unpushed** — sub-agent pushes hang intermittently (3 of 5); decision D11 (push boundary) presented. Next: T14a remainder, T15 real-run refresh, first-user recruit (owner; blurb supplied).
 
 ---
 
