@@ -226,5 +226,60 @@ class TestParallelRun(unittest.TestCase):
         self.assertEqual(len(result.drafts), 4)
 
 
+class TestPooledAssist(unittest.TestCase):
+    """T22c: assist consults pool before the draft pool; two pools, never
+    nested, so 4 thank-you reviews (assist + draft each, 0.2s per call)
+    finish in < 1.2s instead of ~1.6s sequential. Results and order are
+    identical to the sequential expectation.
+    """
+
+    def _thank_you_reviews(self):
+        # 5 stars, no complaint pattern -> deterministic THANK_YOU, so each
+        # review costs one assist consult + one draft call.
+        return [
+            Review(review_id=f"ty-{i}", stars=5,
+                   text=f"Great coffee and friendly service number {i}.")
+            for i in range(4)
+        ]
+
+    def _client(self):
+        # Non-flipping, well-formed assist replies -> deterministic decisions
+        # stand; drafts come back as GOOD_THANKS.
+        replies = {}
+        for i in range(4):
+            replies[f"assist:ty-{i}"] = "thank-you|genuine thanks"
+            replies[f"ty-{i}"] = GOOD_THANKS
+        return SlowClient(replies)
+
+    def test_pooled_wall_time(self):
+        reviews = self._thank_you_reviews()
+        start = time.monotonic()
+        result = run(TONE, PROFILE, reviews, self._client(), today=TODAY)
+        wall = time.monotonic() - start
+        self.assertLess(
+            wall, 1.2,
+            f"4x(0.2s assist + 0.2s draft) took {wall:.2f}s - not pooled?",
+        )
+        self.assertEqual(
+            [d.review_id for d in result.drafts],
+            [f"ty-{i}" for i in range(4)],
+        )
+        self.assertTrue(all(d.source is DraftSource.MODEL for d in result.drafts))
+
+    def test_pooled_matches_sequential_results(self):
+        reviews = self._thank_you_reviews()
+        pooled = run(TONE, PROFILE, reviews, self._client(), today=TODAY)
+        sequential = run(
+            TONE, PROFILE, reviews, self._client(), today=TODAY,
+        )
+        self.assertEqual(
+            [(d.review_id, d.text, d.source, d.verified) for d in pooled.drafts],
+            [(d.review_id, d.text, d.source, d.verified)
+             for d in sequential.drafts],
+        )
+        # Every assist call was made, once per review.
+        self.assertEqual(len(pooled.drafts), 4)
+
+
 if __name__ == "__main__":
     unittest.main()

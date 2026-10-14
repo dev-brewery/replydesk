@@ -57,42 +57,59 @@ TRIAGE_ASSIST_SYSTEM = (
 )
 
 
-def _consult_assist(client, decisions: list[TriageDecision]) -> list[TriageDecision]:
-    """§5 triage assist: consult once per deterministic THANK_YOU decision.
+def _apply_assist(client, decision: TriageDecision) -> TriageDecision:
+    """One assist consult for a deterministic THANK_YOU decision.
 
     Only a well-formed 'fix-it|reason' flips (one-way, toward the cautious
     category). Malformed output or an LLMError leaves the deterministic
-    decision unchanged; the assist never blocks or drafts.
+    decision unchanged; the assist never blocks or drafts. Stateless apart
+    from the client, so safe to run concurrently.
+    """
+    try:
+        output = client.complete(
+            TRIAGE_ASSIST_SYSTEM,
+            decision.review.text,
+            key=f"assist:{decision.review.review_id}",
+            max_tokens=512,
+        )
+    except LLMError:
+        return decision
+    stripped = output.strip()
+    # Output contract is one line; anything multi-line is malformed.
+    category, sep, reason = (
+        stripped.partition("|") if stripped and "\n" not in stripped
+        else ("", "", "")
+    )
+    if sep and reason.strip() and category.strip().lower() == "fix-it":
+        return TriageDecision(
+            review=decision.review,
+            category=TriageCategory.FIX_IT,
+            reason=f"triage assist flip: {reason.strip()}",
+        )
+    return decision
+
+
+def _consult_assist(client, decisions: list[TriageDecision]) -> list[TriageDecision]:
+    """§5 triage assist, pooled (T22c): one consult per deterministic
+    THANK_YOU decision, executed concurrently with results collected in
+    review order. Semantics identical to the sequential version.
     """
     adjusted: list[TriageDecision] = []
-    for decision in decisions:
-        if decision.category is not TriageCategory.THANK_YOU:
-            adjusted.append(decision)
-            continue
-        try:
-            output = client.complete(
-                TRIAGE_ASSIST_SYSTEM,
-                decision.review.text,
-                key=f"assist:{decision.review.review_id}",
-                max_tokens=512,
-            )
-        except LLMError:
-            adjusted.append(decision)
-            continue
-        stripped = output.strip()
-        # Output contract is one line; anything multi-line is malformed.
-        category, sep, reason = (
-            stripped.partition("|") if stripped and "\n" not in stripped
-            else ("", "", "")
-        )
-        if sep and reason.strip() and category.strip().lower() == "fix-it":
-            adjusted.append(TriageDecision(
-                review=decision.review,
-                category=TriageCategory.FIX_IT,
-                reason=f"triage assist flip: {reason.strip()}",
-            ))
+    targets: list[tuple[int, TriageDecision]] = []
+    for index, decision in enumerate(decisions):
+        if decision.category is TriageCategory.THANK_YOU:
+            targets.append((index, decision))
+            adjusted.append(decision)  # placeholder, replaced below
         else:
             adjusted.append(decision)
+    if targets:
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            futures = [
+                pool.submit(_apply_assist, client, decision)
+                for _, decision in targets
+            ]
+            for (index, _), future in zip(targets, futures):
+                adjusted[index] = future.result()
     return adjusted
 
 
@@ -238,8 +255,10 @@ def run(
 
     Per-review drafting runs in a small thread pool (T22b); results are
     collected in original review order, so output is deterministic. The
-    triage assist consult stays sequential before dispatch: it decides the
-    guidance every prompt below depends on.
+    triage assist consults are pooled separately (T22c) and complete before
+    the draft pool starts — never nested on one executor — keeping total
+    in-flight requests ≤ ~8: it decides the guidance every prompt below
+    depends on.
     """
     decisions = _consult_assist(client, triage_all(reviews))
     system = _system_prompt(tone_guide, profile)
