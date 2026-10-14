@@ -265,7 +265,7 @@
     var RETRY_DELAY_MS = 700;
     var seen = [];
     function attempt(n) {
-      return fetchLike('service.json?t=' + Date.now())
+      return fetchLike('service.json?t=' + Date.now(), { cache: 'no-store' })
         .then(function (res) {
           return res.ok ? res.json()
             : { status: 'unavailable', url: null };

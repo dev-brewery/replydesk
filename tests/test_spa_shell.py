@@ -40,8 +40,8 @@ class SpaShellTest(unittest.TestCase):
         self.assertNotRegex(self.app, r"https?://")
 
     def test_relative_script_loads(self):
-        self.assertIn('<script src="rd.js"></script>', self.html)
-        self.assertIn('<script src="app.js"></script>', self.html)
+        self.assertIn('<script src="rd.js?v=3"></script>', self.html)
+        self.assertIn('<script src="app.js?v=3"></script>', self.html)
 
     def test_header_and_pricing_copy(self):
         self.assertIn("review replies in your own voice", self.html)
