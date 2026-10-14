@@ -1,6 +1,7 @@
 /* app.js — replydesk SPA DOM glue (T21b).
  * All logic lives in rd.js (pure, node-testable); this file only wires the
- * views: sign up / log in / session / log out / workspace placeholder.
+ * views: sign up / log in / session / log out / workspace, plus the T21e
+ * draft flow (pure builders exported on window.rdDraft for node tests).
  */
 (function () {
   'use strict';
@@ -132,25 +133,163 @@
     if (!res.found) zeroHint.classList.remove('hidden');
   });
 
-  draftButton.addEventListener('click', function () {
-    draftNote.textContent = '';
-    if (rd.triageReview && rd.templateReply) {
-      // T21d lands these pure ports; when present, render the previewed
-      // reviews through the deterministic template path.
-      draftNote.textContent = 'Template drafts below — model replies connect via the service.';
-      var res = rd.previewSummaries(reviewsEl.value);
-      previewList.innerHTML = res.items.map(function (r) {
-        var d = rd.triageReview(r);
-        return '<li><span class="stars">' + starsLabel(r.stars) + '</span> — '
-          + esc(d.category) + ': ' + esc(rd.FALLBACK_LABEL
-            + rd.templateReply(d, { name: '', kind: '', city: '' }))
-          + '</li>';
-      }).join('');
-    } else {
-      draftNote.textContent =
-        'Drafting service connects in the next build step.';
+  // --- T21e: draft flow (ARCHITECTURE §11/§12) ------------------------------
+  // Pure, node-testable builders live in rdDraft below; the click handler only
+  // fetches service.json (cache-busted), calls requestDrafts, and renders.
+  var OFFLINE_NOTE = 'replydesk service offline — these are editable templates; '
+    + 'live model drafts connect when the service is up.';
+  var DEFAULT_PROFILE = { name: 'my business', kind: 'local shop', city: 'town' };
+
+  function defaultProfile(p) {
+    return {
+      name: (p && p.name) || DEFAULT_PROFILE.name,
+      kind: (p && p.kind) || DEFAULT_PROFILE.kind,
+      city: (p && p.city) || DEFAULT_PROFILE.city
+    };
+  }
+
+  // Build card descriptors from parsed reviews plus either a live RunResult
+  // JSON ({decisions:[], drafts:[]} per api.runresult_json) or — when `run` is
+  // null — the offline client-side triage + labeled template path.
+  function buildCards(reviews, run, profile) {
+    profile = defaultProfile(profile);
+    var decisions = {};
+    var drafts = {};
+    if (run) {
+      (run.decisions || []).forEach(function (d) { decisions[d.review_id] = d; });
+      (run.drafts || []).forEach(function (d) { drafts[d.review_id] = d; });
     }
+    return reviews.map(function (r) {
+      var dec = decisions[r.review_id];
+      var category = dec ? dec.category : rd.triageReview(r).category;
+      var reason = dec ? dec.reason : rd.triageReview(r).reason;
+      var card = {
+        review_id: r.review_id, stars: r.stars, text: r.text,
+        category: category, reason: reason,
+        needsHuman: category === 'needs_human',
+        draftText: null, source: null, verified: null
+      };
+      if (card.needsHuman) return card; // no draft, no box
+      var d = run ? drafts[r.review_id] : null;
+      if (d) {
+        card.draftText = d.text;
+        card.source = d.source;
+        card.verified = !!d.verified;
+      } else {
+        var decision = rd.triageReview(r);
+        card.draftText = rd.FALLBACK_LABEL + ' '
+          + rd.templateReply(decision, profile);
+        card.source = rd.FALLBACK_LABEL;
+        card.verified = false;
+      }
+      return card;
+    });
+  }
+
+  // Offline path: every non-needs-human review gets a labeled template draft.
+  function offlineCards(reviews, profile) {
+    return {
+      mode: 'offline',
+      cards: buildCards(reviews, null, profile),
+      note: OFFLINE_NOTE
+    };
+  }
+
+  // requestDrafts({service, fetch, tone, profile, reviewsText}) — pure apart
+  // from the injected fetch. Never a dead end: service not live, fetch or POST
+  // failure all fall through to the offline template path.
+  function requestDrafts(deps) {
+    var parsed = rd.parsePaste(deps.reviewsText);
+    if (parsed.error || !parsed.reviews.length) {
+      return Promise.resolve({ mode: 'empty', cards: [], note: '' });
+    }
+    var svc = deps.service || {};
+    if (svc.status !== 'live' || !svc.url) {
+      return Promise.resolve(offlineCards(parsed.reviews, deps.profile));
+    }
+    var body = JSON.stringify({
+      tone: deps.tone || '',
+      profile: defaultProfile(deps.profile),
+      reviews: parsed.reviews
+    });
+    // Generous client timeout: model drafting can take a while; no explicit
+    // abort — the server side owns the deadline.
+    return deps.fetch(svc.url + '/api/draft', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: body
+    }).then(function (res) {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.json();
+    }).then(function (run) {
+      return {
+        mode: 'live',
+        cards: buildCards(parsed.reviews, run, deps.profile),
+        note: run.note || ''
+      };
+    }).catch(function () {
+      return offlineCards(parsed.reviews, deps.profile);
+    });
+  }
+
+  // Render cards into a container element. All review text, reasons, labels
+  // and draft bodies pass through esc() — nothing raw reaches innerHTML.
+  function renderCardsInto(el, cards) {
+    el.innerHTML = cards.map(function (c) {
+      var h = '<li><span class="stars">' + esc(starsLabel(c.stars)) + '</span> '
+        + '<span class="badge">' + esc(c.category) + '</span> '
+        + esc(c.reason)
+        + '<p>' + esc(c.text) + '</p>';
+      if (c.needsHuman) {
+        h += '<p class="honest">Needs a human — no draft generated.</p></li>';
+      } else {
+        h += '<p class="src-label">' + esc(c.source) + ' — '
+          + (c.verified ? 'verified' : 'unverified') + '</p>'
+          + '<textarea rows="4">' + esc(c.draftText) + '</textarea></li>';
+      }
+      return h;
+    }).join('');
+  }
+
+  var draftCards = document.getElementById('draft-cards');
+
+  draftButton.addEventListener('click', function () {
+    draftNote.textContent = 'Drafting…';
+    fetch('service.json?t=' + Date.now())
+      .then(function (res) {
+        return res.ok ? res.json()
+          : { status: 'unavailable', url: null };
+      })
+      .catch(function () { return { status: 'unavailable', url: null }; })
+      .then(function (svc) {
+        return requestDrafts({
+          service: svc,
+          fetch: fetch,
+          tone: document.getElementById('tone').value,
+          profile: {
+            name: document.getElementById('bp-name').value,
+            kind: document.getElementById('bp-kind').value,
+            city: document.getElementById('bp-city').value
+          },
+          reviewsText: reviewsEl.value
+        });
+      })
+      .then(function (result) {
+        renderCardsInto(draftCards, result.cards);
+        draftNote.textContent = result.note;
+      }, function () {
+        draftNote.textContent = OFFLINE_NOTE;
+      });
   });
+
+  // Test surface: pure builders, exercised node-side by tests/test_app_js_draft.py.
+  window.rdDraft = {
+    buildCards: buildCards,
+    requestDrafts: requestDrafts,
+    renderCardsInto: renderCardsInto,
+    defaultProfile: defaultProfile,
+    OFFLINE_NOTE: OFFLINE_NOTE
+  };
 
   // Session restore: a returning visitor with a live session flag lands in
   // the workspace; everyone else sees the auth forms.

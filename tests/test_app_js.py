@@ -296,8 +296,15 @@ class PlanGateShellTest(unittest.TestCase):
         self.assertIn("rd.planState", self.app)
         self.assertIn("rd.activateTrial", self.app)
         self.assertIn("rd.previewSummaries", self.app)
-        self.assertIn("Drafting service connects in the next build step.",
-                      self.app)
+
+    def test_app_js_wires_draft_flow(self):
+        """T21e: placeholder replaced by the hosted draft flow."""
+        self.assertNotIn("Drafting service connects in the next build step.",
+                         self.app)
+        self.assertIn("window.rdDraft", self.app)
+        self.assertIn("requestDrafts", self.app)
+        self.assertIn("'service.json?t=' + Date.now()", self.app)
+        self.assertIn("service offline", self.app)
 
     def test_draft_button_starts_locked(self):
         self.assertRegex(

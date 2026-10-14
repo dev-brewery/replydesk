@@ -48,7 +48,11 @@
     border-radius: 6px; font-size: .95rem; font-family: inherit;
   }
   #preview-list { margin: .6rem 0 0; padding-left: 1.2rem; font-size: .9rem; }
-  #preview-list li { margin-bottom: .25rem; }
+  #preview-list li, #draft-cards li { margin-bottom: .25rem; }
+  #draft-cards { list-style: none; padding: 0; }
+  .badge { display: inline-block; background: #eef3f8; color: #10365c;
+    border-radius: 4px; padding: 0 .4rem; font-size: .8rem; }
+  .src-label { font-size: .8rem; color: #52606d; margin: .5rem 0 .15rem; }
   .stars { color: #d97706; letter-spacing: 1px; }
   .hidden { display: none; }
   footer { text-align: center; color: #7b8794; font-size: .8rem; padding: 1rem; }
@@ -136,6 +140,7 @@
         <ul id="preview-list"></ul>
         <button type="button" id="draft-button" disabled>Draft replies</button>
         <p id="draft-note" class="honest"></p>
+        <ul id="draft-cards"></ul>
       </div>
       <button type="button" class="secondary" id="logout-button">Log out</button>
     </div>
