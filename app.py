@@ -368,3 +368,7 @@ def main(argv=None) -> None:
         pass
     finally:
         httpd.server_close()
+
+
+if __name__ == "__main__":  # pragma: no cover
+    main()
