@@ -42,6 +42,14 @@
   button.secondary { background: #5b7083; }
   .error { color: #b3261e; font-size: .85rem; min-height: 1.2em; margin-top: .4rem; }
   .honest { font-size: .8rem; color: #52606d; margin-top: .75rem; }
+  button:disabled { background: #9aa5b1; cursor: not-allowed; }
+  textarea {
+    width: 100%; padding: .5rem; border: 1px solid #b9c4cf;
+    border-radius: 6px; font-size: .95rem; font-family: inherit;
+  }
+  #preview-list { margin: .6rem 0 0; padding-left: 1.2rem; font-size: .9rem; }
+  #preview-list li { margin-bottom: .25rem; }
+  .stars { color: #d97706; letter-spacing: 1px; }
   .hidden { display: none; }
   footer { text-align: center; color: #7b8794; font-size: .8rem; padding: 1rem; }
 </style>
@@ -91,9 +99,44 @@
   </div>
 
   <div id="workspace-view" class="hidden">
+    <div id="plan-view">
+      <div class="card">
+        <h2>Founding plan &mdash; $9/month. First month free for founding
+          members.</h2>
+        <p class="honest">We'll invoice you by email before the first charge.
+          No card needed now.</p>
+        <button type="button" id="activate-trial">Activate trial</button>
+        <div class="error" id="plan-error" role="alert"></div>
+      </div>
+    </div>
     <div class="card">
       <h2 id="workspace-greeting">Your workspace</h2>
-      <p>Your workspace &mdash; review paste arrives in the next build step.</p>
+      <p id="plan-lock" class="honest">Drafting stays locked until you activate
+        the founding trial &mdash; no card, no charge now.</p>
+      <div id="workspace-body" class="hidden">
+        <label for="tone">How you talk (tone guide)</label>
+        <textarea id="tone" rows="6" placeholder="&#35; Voice&#10;How I talk to customers...&#10;&#10;&#35; Facts I'll stand behind&#10;- we open at 7am"></textarea>
+        <p class="honest">Use the headings # Voice and # Facts I'll stand
+          behind.</p>
+        <label for="bp-name">Business name (optional)</label>
+        <input id="bp-name" type="text" maxlength="60">
+        <label for="bp-kind">What kind of business (optional)</label>
+        <input id="bp-kind" type="text" maxlength="60">
+        <label for="bp-city">City (optional)</label>
+        <input id="bp-city" type="text" maxlength="60">
+        <label for="reviews">Your reviews</label>
+        <textarea id="reviews" rows="8" placeholder="5 | best coffee on the block&#10;2 | my order was cold"></textarea>
+        <p class="honest">Paste your whole Google or Yelp reviews page, or type
+          <code>5 | text</code> lines, one per review.</p>
+        <button type="button" class="secondary" id="preview-button">Preview
+          found reviews</button>
+        <p id="zero-found-hint" class="honest hidden">We could not find any
+          reviews in that paste. Try typing manual lines instead, one per line,
+          like: <code>5 | best coffee on the block</code>.</p>
+        <ul id="preview-list"></ul>
+        <button type="button" id="draft-button" disabled>Draft replies</button>
+        <p id="draft-note" class="honest"></p>
+      </div>
       <button type="button" class="secondary" id="logout-button">Log out</button>
     </div>
   </div>

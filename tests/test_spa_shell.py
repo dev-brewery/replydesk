@@ -48,8 +48,11 @@ class SpaShellTest(unittest.TestCase):
         self.assertIn("$9/month, first month free", self.html)
         self.assertIn("No card needed", self.html)
 
-    def test_workspace_placeholder_copy(self):
-        self.assertIn("review paste arrives in the next build step", self.html)
+    def test_workspace_controls_wired(self):
+        # T21c replaced the placeholder card with real workspace controls.
+        self.assertIn('id="tone"', self.html)
+        self.assertIn('id="reviews"', self.html)
+        self.assertIn("Preview\n          found reviews", self.html)
 
     def test_app_js_is_dom_glue_only(self):
         # app.js must not reimplement logic — it consumes rd.* helpers.

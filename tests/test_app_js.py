@@ -134,6 +134,73 @@ test('logout clears the session only', async () => {
   assert.ok(accounts['a@b.co']); // account record survives
 });
 
+// --- T21c: founding-plan gate + found-reviews preview -----------------------
+
+async function signedUp(s) {
+  const r = await rd.createAccount(s, { name: 'Dana', email: 'a@b.co',
+    password: 'longenough1' });
+  assert.ok(r.ok, r.error);
+}
+
+test('plan locked until activation: signed in but no plan state', async () => {
+  const s = makeStorage();
+  await signedUp(s);
+  const st = rd.planState(s);
+  assert.ok(st.signedIn);
+  assert.strictEqual(st.plan, null);
+});
+
+test('activation stores founding trial state and unlocks', async () => {
+  const s = makeStorage();
+  await signedUp(s);
+  const r = rd.activateTrial(s, '2025-01-01');
+  assert.ok(r.ok, r.error);
+  assert.deepStrictEqual(r.plan, {
+    plan: 'founding', status: 'trial', activated_on: '2025-01-01' });
+  assert.strictEqual(rd.planState(s).plan.status, 'trial');
+});
+
+test('activation requires a signed-in account', () => {
+  const r = rd.activateTrial(makeStorage(), '2025-01-01');
+  assert.ok(!r.ok);
+});
+
+test('plan state persists across logout/login (reload path)', async () => {
+  const s = makeStorage();
+  await signedUp(s);
+  rd.activateTrial(s, '2025-01-02');
+  rd.logout(s);
+  assert.strictEqual(rd.planState(s).signedIn, false);
+  const back = await rd.login(s, { email: 'a@b.co', password: 'longenough1' });
+  assert.ok(back.ok, back.error);
+  const st = rd.planState(s);
+  assert.ok(st.signedIn);
+  assert.strictEqual(st.plan.status, 'trial');
+  assert.strictEqual(st.plan.activated_on, '2025-01-02');
+});
+
+test('preview uses rd.parsePaste: glyph-run dump gives count + first lines', () => {
+  const dump = [
+    '\u2605\u2605\u2605\u2605\u2605',
+    'Best coffee around, hands down.',
+    '',
+    '\u2605\u2605',
+    'Cold order at first, staff fixed it fast.',
+  ].join('\n');
+  const res = rd.previewSummaries(dump);
+  assert.strictEqual(res.count, 2);
+  assert.ok(res.found);
+  assert.strictEqual(res.items[0].stars, 5);
+  assert.match(res.items[0].first, /^Best coffee around/);
+  assert.strictEqual(res.items[1].stars, 2);
+});
+
+test('zero-found preview flags the manual-lines hint path', () => {
+  const res = rd.previewSummaries('lorem ipsum nonsense only\nno anchors here');
+  assert.strictEqual(res.count, 0);
+  assert.strictEqual(res.found, false);
+});
+
 (async () => {
   const results = [];
   for (const [name, fn] of tests) {
@@ -167,8 +234,75 @@ class RdJsAuthTest(unittest.TestCase):
             "hash determinism", "equalHex", "valid signup", "empty name",
             "bad email rejected", "short password rejected",
             "duplicate email rejected", "login verifies", "logout clears",
+            "plan locked until activation", "activation stores",
+            "activation requires", "persists across logout/login",
+            "preview uses rd.parsePaste", "zero-found preview",
         ):
             self.assertIn(marker, output)
+
+
+class PlanGateShellTest(unittest.TestCase):
+    """T21c static assertions: plan gate + workspace in the SPA shell."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.html = (REPO / "docs" / "app" / "index.html").read_text(
+            encoding="utf-8")
+        cls.app = (REPO / "docs" / "app" / "app.js").read_text(
+            encoding="utf-8")
+        cls.rd = RD_JS.read_text(encoding="utf-8")
+        # Whitespace-normalized view for phrase assertions across wrapped lines.
+        cls.flat = " ".join(cls.html.split())
+
+    def test_plan_copy_verbatim(self):
+        self.assertIn(
+            "We'll invoice you by email before the first charge", self.flat)
+        self.assertIn("No card needed now", self.html)
+        self.assertIn("First month free for founding", self.html)
+
+    def test_activate_trial_button(self):
+        self.assertIn('id="activate-trial"', self.html)
+        self.assertIn(">Activate trial</button>", self.html)
+
+    def test_no_card_fields_anywhere(self):
+        self.assertNotRegex(self.html, r"card number|card-number|cvv|expiry",
+                            "no payment fields — invoiced later, honestly")
+
+    def test_tone_placeholder_matches_app_py(self):
+        import sys
+        sys.path.insert(0, str(REPO))
+        from app import VOICE_PLACEHOLDER
+        for line in VOICE_PLACEHOLDER.splitlines():
+            if line.strip():
+                self.assertIn(line.strip(), self.flat,
+                              f"tone placeholder line missing: {line!r}")
+
+    def test_reviews_placeholder_and_paste_guidance(self):
+        self.assertIn("2 | my order was cold", self.html)
+        self.assertIn("Paste your whole Google or Yelp reviews page", self.html)
+
+    def test_zero_found_hint(self):
+        self.assertIn("We could not find any reviews", self.flat)
+        self.assertIn("manual lines", self.flat)
+
+    def test_rd_js_exposes_plan_and_preview_helpers(self):
+        for fn in ("planState", "activateTrial", "previewSummaries",
+                   "parsePaste"):
+            self.assertIn(fn, self.rd)
+        self.assertIn("founding", self.rd)
+        self.assertIn("trial", self.rd)
+
+    def test_app_js_wires_gate_preview_and_honest_draft_note(self):
+        self.assertIn("rd.planState", self.app)
+        self.assertIn("rd.activateTrial", self.app)
+        self.assertIn("rd.previewSummaries", self.app)
+        self.assertIn("Drafting service connects in the next build step.",
+                      self.app)
+
+    def test_draft_button_starts_locked(self):
+        self.assertRegex(
+            self.html, r'id="draft-button"[^>]*disabled',
+            "drafting locked until trial activation")
 
 
 if __name__ == "__main__":

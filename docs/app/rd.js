@@ -258,6 +258,41 @@
     return storage.getItem(SESSION_KEY);
   }
 
+  // --- founding plan (T21c) -------------------------------------------------
+  // The plan lives on the account record, so it survives logout/login and
+  // reloads exactly like the rest of the account state.
+  function planState(storage) {
+    var email = sessionEmail(storage);
+    if (!email) return { signedIn: false, plan: null };
+    var acct = JSON.parse(storage.getItem(ACCOUNTS_KEY) || '{}')[email];
+    return { signedIn: true, plan: acct ? (acct.plan || null) : null };
+  }
+
+  function activateTrial(storage, activatedOn) {
+    var email = sessionEmail(storage);
+    if (!email) return { ok: false, error: 'not signed in' };
+    var accounts = JSON.parse(storage.getItem(ACCOUNTS_KEY) || '{}');
+    var acct = accounts[email];
+    if (!acct) return { ok: false, error: 'no account' };
+    acct.plan = { plan: 'founding', status: 'trial',
+      activated_on: activatedOn || null };
+    accounts[email] = acct;
+    storage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
+    return { ok: true, plan: acct.plan };
+  }
+
+  // --- found-reviews preview (T21c) -----------------------------------------
+  // Pure view of rd.parsePaste: stars + first-line excerpt per review, plus a
+  // `found` flag so the UI can show the manual-lines hint when zero parse.
+  function previewSummaries(text) {
+    var parsed = parsePaste(text);
+    var items = parsed.reviews.map(function (r) {
+      var first = r.text.length > 100 ? r.text.slice(0, 97) + '\u2026' : r.text;
+      return { review_id: r.review_id, stars: r.stars, first: first };
+    });
+    return { count: items.length, items: items, found: items.length > 0 };
+  }
+
   global.rd = {
     parsePaste: parsePaste,
     parseReviews: parseReviews,
@@ -268,6 +303,9 @@
     login: login,
     logout: logout,
     sessionEmail: sessionEmail,
+    planState: planState,
+    activateTrial: activateTrial,
+    previewSummaries: previewSummaries,
     PBKDF2_ITERATIONS: PBKDF2_ITERATIONS,
     ACCOUNTS_KEY: ACCOUNTS_KEY,
     SESSION_KEY: SESSION_KEY
