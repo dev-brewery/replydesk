@@ -13,6 +13,9 @@
   var GLYPH_RUN_RE = new RegExp(
     '^[\u2605\u2606\u2b50\u00bd\ue838' + RUN_FILLER_CHARS + '\\s]*[\u2605\ue838]' +
     '[\u2605\u2606\u2b50\u00bd\ue838' + RUN_FILLER_CHARS + '\\s]*$');
+  // Note: \ue838 must stay in the outer classes too — real Google star rows are
+  // made entirely of it, so a run like \ue838\ue838\ue838 must match via the
+  // leading/trailing classes, not the single mandatory center char.
   var NUMERIC_ANCHOR_RE = /^\s*(?:rated\s+)?([1-5])\s*(?:\/|out\s+of)\s*5\s*[.:)]?\s*$/i;
   var DATE_RE = /^(?:just\s+now|a\s+few\s+seconds\s+ago|(?:a|\d+)\s+(?:second|minute|hour|day|week|month|year)s?\s+ago)$/i;
   var NAME_RE = /^(?:[A-Z][\w'.-]*\s+){1,3}[A-Z][\w'.-]*$/;
