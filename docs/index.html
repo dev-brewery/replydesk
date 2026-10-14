@@ -62,7 +62,8 @@
 <header>
   <h1>replydesk</h1>
   <p>review replies in your own voice</p>
-  <p><a href="/demo/" style="color:#cfe0f2;font-size:.85rem">see a recorded demo</a></p>
+  <p><a href="/demo/" style="color:#cfe0f2;font-size:.85rem">see a recorded demo</a> &middot;
+     <a href="/help/" style="color:#cfe0f2;font-size:.85rem">Help</a></p>
 </header>
 <main>
   <div class="steps">
@@ -132,12 +133,14 @@
         <label for="reviews">Your reviews</label>
         <textarea id="reviews" rows="8" placeholder="5 | best coffee on the block&#10;2 | my order was cold"></textarea>
         <p class="honest">Paste your whole Google or Yelp reviews page, or type
-          <code>5 | text</code> lines, one per review.</p>
+          <code>5 | text</code> lines, one per review. <a href="/help/">How do I
+          get my reviews?</a></p>
         <button type="button" class="secondary" id="preview-button">Preview
           found reviews</button>
         <p id="zero-found-hint" class="honest hidden">We could not find any
           reviews in that paste. Try typing manual lines instead, one per line,
-          like: <code>5 | best coffee on the block</code>.</p>
+          like: <code>5 | best coffee on the block</code>. <a href="/help/">How do
+          I get my reviews?</a></p>
         <ul id="preview-list"></ul>
         <button type="button" id="draft-button" disabled>Draft replies</button>
         <p id="draft-note" class="honest"></p>
@@ -149,7 +152,7 @@
 </main>
 <footer>replydesk &mdash; founding-plan preview</footer>
 <!-- Bump v on every SPA deploy (rd.js and app.js together) to cache-bust clients. -->
-<script src="rd.js?v=5"></script>
-<script src="app.js?v=5"></script>
+<script src="rd.js?v=6"></script>
+<script src="app.js?v=6"></script>
 </body>
 </html>
