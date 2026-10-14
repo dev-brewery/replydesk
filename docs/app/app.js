@@ -290,13 +290,17 @@
 
   var draftCards = document.getElementById('draft-cards');
 
+  // A detached global `fetch` throws "Illegal invocation" in browsers when
+  // invoked unbound; wrap it so it is always invoked on `window`.
+  var fetchBound = function () { return fetch.apply(window, arguments); };
+
   draftButton.addEventListener('click', function () {
     draftNote.textContent = 'Drafting…';
-    fetchServiceConfig(fetch)
+    fetchServiceConfig(fetchBound)
       .then(function (svc) {
         return requestDrafts({
           service: svc,
-          fetch: fetch,
+          fetch: fetchBound,
           tone: document.getElementById('tone').value,
           profile: {
             name: document.getElementById('bp-name').value,

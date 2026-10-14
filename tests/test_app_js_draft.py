@@ -237,6 +237,27 @@ test('CDN split: network error then live → resolves live', async () => {
   assert.deepStrictEqual(svc, live);
 });
 
+// Live root cause T21e4: browsers throw 'Illegal invocation' when a detached
+// global fetch is invoked unbound. Simulate a real global-shaped fetch that
+// only works when called with `this === window`, wrap it the way app.js wraps
+// it (fetchBound), and prove requestDrafts works through that path.
+test('bound fetch: detached global-shaped fetch works through the window wrapper', async () => {
+  const strictGlobalFetch = function (url, opts) {
+    assert.strictEqual(this, globalThis.window,
+      'global fetch must be invoked with window as this');
+    return Promise.resolve(okJson({
+      generated_on: '2025-01-01', profile: {}, decisions: [], drafts: [],
+    }));
+  };
+  const fetchBound = function () { return strictGlobalFetch.apply(window, arguments); };
+  const res = await app.requestDrafts({
+    service: { status: 'live', url: 'https://tunnel.example' },
+    fetch: fetchBound, tone: '# Voice', profile: {},
+    reviewsText: REVIEWS_TEXT,
+  });
+  assert.strictEqual(res.mode, 'live');
+});
+
 (async () => {
   const results = [];
   for (const [name, fn] of tests) {
@@ -272,6 +293,7 @@ class AppJsDraftTests(unittest.TestCase):
             "<script> is escaped", "no review text survives unescaped",
             "resolves live in 2 attempts", "resolves the unavailable config",
             "network error then live",
+            "bound fetch",
         ):
             self.assertIn(marker, output)
 
@@ -293,6 +315,13 @@ class AppJsDraftTests(unittest.TestCase):
         app = APP_JS.read_text(encoding="utf-8")
         self.assertIn("'service.json?t=' + Date.now()", app)
         self.assertIn("service offline", app)
+
+    def test_app_js_binds_global_fetch(self):
+        """T21e4: the live handler must not pass the detached global fetch."""
+        app = APP_JS.read_text(encoding="utf-8")
+        self.assertIn("fetch.apply(window, arguments)", app)
+        self.assertIn("fetchServiceConfig(fetchBound)", app)
+        self.assertIn("fetch: fetchBound", app)
 
 
 if __name__ == "__main__":
