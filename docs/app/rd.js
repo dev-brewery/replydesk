@@ -281,6 +281,103 @@
     return { ok: true, plan: acct.plan };
   }
 
+  // --- deterministic triage (T21d, ARCHITECTURE §11) ------------------------
+  // Faithful port of replydesk/triage.py: same ordered rule table, first match
+  // wins; NEEDS_HUMAN groups before complaint patterns before star fall-through.
+  // Case-sensitive patterns (staff names) keep case; all others are /i.
+  var TRIAGE_LEGAL = [
+    /lawyer/i, /attorney/i, /\bsue\b/i, /suing/i, /\bcourt\b/i,
+    /legal action/i, /small claims/i, /cease and desist/i
+  ];
+  var TRIAGE_SAFETY_HEALTH = [
+    /food poisoning/i, /sick after/i, /got sick/i, /illness/i, /injury/i,
+    /injured/i, /ambulance/i, /\ber\b/i, /hospital/i, /allergic reaction/i,
+    /health department/i, /hazard/i, /blood/i, /glass in/i, /hair in my food/i,
+    /mold/i
+  ];
+  var TRIAGE_REFUND_DISPUTE = [
+    /refund/i, /money back/i, /charged twice/i, /double charged/i,
+    /chargeback/i, /dispute the charge/i, /credit card dispute/i
+  ];
+  var TRIAGE_PERSONAL = [
+    /discriminat/i, /racist/i, /sexist/i, /homophobic/i, /harass/i,
+    /assault/i, /my mother passed/i, /funeral/i,
+    // staff member referenced by a capitalized name — case-sensitive
+    /spoke to [A-Z][a-z]+/,
+    /(?:the )?(?:waiter|waitress|barista|cashier|manager|server|clerk|staffer|tech|technician|plumber|mechanic|installer|contractor|electrician|hvac|driver|rep|agent|employee|worker) named [A-Z][a-z]+/
+  ];
+  var TRIAGE_COMPLAINT = [
+    /broken/i, /cold/i, /late/i, /rude/i, /wrong order/i, /never arrived/i,
+    /dirty/i, /overcharged/i, /ignored/i, /cancelled/i
+  ];
+
+  var TRIAGE_RULES = [
+    { category: 'needs_human', group: 'legal', patterns: TRIAGE_LEGAL },
+    { category: 'needs_human', group: 'safety-health', patterns: TRIAGE_SAFETY_HEALTH },
+    { category: 'needs_human', group: 'refund-dispute', patterns: TRIAGE_REFUND_DISPUTE },
+    { category: 'needs_human', group: 'personal', patterns: TRIAGE_PERSONAL },
+    { category: 'fix_it', group: 'complaint', patterns: TRIAGE_COMPLAINT }
+  ];
+
+  // Port of triage.triage(review): review is {review_id, stars, text}.
+  // Returns {review, category, reason} with categories
+  // 'thank_you' | 'fix_it' | 'needs_human'; reasons formatted identically to
+  // the Python module ("group: matched pattern 'x'" / star fall-through text).
+  function triageReview(review) {
+    for (var i = 0; i < TRIAGE_RULES.length; i++) {
+      var rule = TRIAGE_RULES[i];
+      for (var j = 0; j < rule.patterns.length; j++) {
+        if (rule.patterns[j].test(review.text)) {
+          return {
+            review: review,
+            category: rule.category,
+            reason: rule.group + ": matched pattern '" + rule.patterns[j].source + "'"
+          };
+        }
+      }
+    }
+    // Fall through: star rating decides. >= 4 is thank-you, <= 3 fix-it.
+    if (review.stars >= 4) {
+      return {
+        review: review,
+        category: 'thank_you',
+        reason: 'no rule matched; ' + review.stars + ' stars >= 4 -> thank-you'
+      };
+    }
+    return {
+      review: review,
+      category: 'fix_it',
+      reason: 'no rule matched; ' + review.stars + ' stars <= 3 -> fix-it'
+    };
+  }
+
+  // --- safe template reply (T21d, ARCHITECTURE §11) -------------------------
+  // Port of draft.template_reply / FALLBACK_LABEL: neutral strings + profile
+  // fields + review echo only — no invented facts. The caller prepends
+  // FALLBACK_LABEL on fallback (same contract as the Python side).
+  var FALLBACK_LABEL = '[Template reply - edit before posting]';
+
+  function templateReply(decision, profile) {
+    var name = profile.name;
+    var starsWord = decision.review.stars === 1 ? 'star' : 'stars';
+    if (decision.category === 'thank_you') {
+      return (
+        'Thank you for the kind words about ' + name + '. ' +
+        'We are glad you took the time to share this. ' +
+        'You said: "' + decision.review.text + '" You gave this ' +
+        decision.review.stars + ' ' + starsWord + '. ' +
+        'It means a lot to everyone here at ' + name + ' in ' + profile.city + '.'
+      );
+    }
+    return (
+      'Thank you for telling us about this. ' +
+      'We are sorry your visit to ' + name + ' was not what it should have been. ' +
+      'This is what you shared: "' + decision.review.text + '" You gave this ' +
+      decision.review.stars + ' ' + starsWord + '. ' +
+      'A person at ' + name + ' reads every note like yours and will look into it.'
+    );
+  }
+
   // --- found-reviews preview (T21c) -----------------------------------------
   // Pure view of rd.parsePaste: stars + first-line excerpt per review, plus a
   // `found` flag so the UI can show the manual-lines hint when zero parse.
@@ -306,6 +403,9 @@
     planState: planState,
     activateTrial: activateTrial,
     previewSummaries: previewSummaries,
+    triageReview: triageReview,
+    templateReply: templateReply,
+    FALLBACK_LABEL: FALLBACK_LABEL,
     PBKDF2_ITERATIONS: PBKDF2_ITERATIONS,
     ACCOUNTS_KEY: ACCOUNTS_KEY,
     SESSION_KEY: SESSION_KEY
