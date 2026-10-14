@@ -78,8 +78,12 @@ def _consult_assist(client, decisions: list[TriageDecision]) -> list[TriageDecis
         except LLMError:
             adjusted.append(decision)
             continue
-        lines = output.strip().splitlines()
-        category, sep, reason = (lines[0] if lines else "").partition("|")
+        stripped = output.strip()
+        # Output contract is one line; anything multi-line is malformed.
+        category, sep, reason = (
+            stripped.partition("|") if stripped and "\n" not in stripped
+            else ("", "", "")
+        )
         if sep and reason.strip() and category.strip().lower() == "fix-it":
             adjusted.append(TriageDecision(
                 review=decision.review,
