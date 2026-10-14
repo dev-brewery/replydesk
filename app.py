@@ -18,6 +18,7 @@ from http import HTTPStatus
 from replydesk.draft import run as run_pipeline
 from replydesk.llm import HttpLLM, LLMError, load_env_config
 from replydesk.model import BusinessProfile, Review, RunResult, ToneGuide
+from replydesk.paste_parse import ReviewsFormatError, parse_reviews, parse_paste  # noqa: F401
 from replydesk.render import escape_text, render_run
 from replydesk.toneguide import ToneGuideError, parse_tone_guide
 from replydesk.triage import triage_all
@@ -45,32 +46,7 @@ _ONLINE_DEGRADED_NOTE = (
 _DEFAULT_PROFILE = BusinessProfile(name="my business", kind="local shop", city="town")
 
 
-class ReviewsFormatError(ValueError):
-    """A review line is not 'stars | text' with stars in 1..5."""
 
-
-def parse_reviews(text: str) -> list[Review]:
-    """Parse '5 | review text' lines; blank lines are skipped."""
-    reviews: list[Review] = []
-    for lineno, line in enumerate(text.splitlines(), start=1):
-        if not line.strip():
-            continue
-        head, sep, body = line.partition("|")
-        if not sep:
-            raise ReviewsFormatError(
-                f"line {lineno}: expected '5 | review text' (missing '|')"
-            )
-        stars = head.strip()
-        if not stars.isdigit() or not 1 <= int(stars) <= 5:
-            raise ReviewsFormatError(
-                f"line {lineno}: rating {stars!r} is not a whole number from 1 to 5"
-            )
-        if not body.strip():
-            raise ReviewsFormatError(f"line {lineno}: review text is empty")
-        reviews.append(
-            Review(review_id=f"r{len(reviews) + 1}", stars=int(stars), text=body.strip())
-        )
-    return reviews
 
 
 class _OfflineClient:
