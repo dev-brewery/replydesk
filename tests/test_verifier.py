@@ -44,13 +44,34 @@ class TestVerifier(unittest.TestCase):
         self.assertIn("untraceable commitment: 'voucher'", v.violations)
 
     def test_invented_name_fails(self):
-        v = check("Thanks, Marlene! Alice will restock.")
+        # Mid-sentence invented name. (Accepted §6 gap: a name at a sentence
+        # start is not name-checked.)
+        v = check("Thanks, Marlene! We will ask Alice to restock.")
         self.assertFalse(v.passed)
         self.assertIn("untraceable name: 'Alice'", v.violations)
 
     def test_sanctioned_commitment_passes(self):
         v = check("We honor refunds when we get it wrong.")
         self.assertTrue(v.passed)
+
+    def test_sentence_start_words_pass(self):
+        for draft in (
+            "Coming back to make this right.",
+            "I'd like the chance to fix this.",
+            "That's on us.",
+        ):
+            with self.subTest(draft=draft):
+                self.assertTrue(check(draft).passed)
+
+    def test_sentence_start_name_exempt_per_spec(self):
+        # 'Priya' is not in any source; exempt only because it starts a sentence.
+        v = check("Priya was fantastic.")
+        self.assertTrue(v.passed)
+        self.assertEqual(v.violations, ())
+
+    def test_mid_sentence_invented_name_still_fails(self):
+        v = check("Thanks for asking; we will ask for Priya.")
+        self.assertIn("untraceable name: 'Priya'", v.violations)
 
     def test_review_sourced_name_passes(self):
         v = check("Marlene, the sourdough will be fresh.")

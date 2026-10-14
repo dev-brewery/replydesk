@@ -19,6 +19,8 @@ COMMITMENT_WORDS = (
     "next time", "come back", "call us", "email us", "reach out", "stop by",
 )
 
+_SENTENCE_END_RE = re.compile(r"[.!?]")
+
 # Capitalized tokens that are sentence-initial courtesy words, not names.
 NAME_STOPLIST = {
     "i", "i'm", "we", "we're", "thanks", "thank", "hi", "hello", "please",
@@ -26,6 +28,10 @@ NAME_STOPLIST = {
     "the", "a", "an", "it", "this", "that", "you", "your", "our", "my",
     "he", "she", "they", "what", "when", "where", "why", "how", "hope",
     "glad", "happy", "great", "good", "wow", "oh", "dear", "sincerely",
+    # Mid-sentence I/We contractions (case-insensitive), per §6 courtesy
+    # exemption. Sentence-initial occurrences are already exempt as sentence
+    # starts; these cover mid-sentence use ("...so I'd like...").
+    "i'd", "i'll", "i've", "i'm", "we'll", "we've", "we're",
 }
 
 _NUMBER_RE = re.compile(
@@ -65,6 +71,18 @@ def _trace_number(token: str, sources_lower: str) -> bool:
 
 def _trace_name(token: str, sources_lower: str) -> bool:
     return token.lower() in sources_lower
+
+
+def _sentence_starts(text: str) -> set[int]:
+    """Offsets just after sentence-ending punctuation, plus offset 0."""
+    starts = {0}
+    for m in _SENTENCE_END_RE.finditer(text):
+        i = m.end()
+        while i < len(text) and not text[i].isalnum():
+            i += 1
+        if i < len(text):
+            starts.add(i)
+    return starts
 
 
 def _find_commitments(text: str) -> list[str]:
@@ -116,8 +134,14 @@ def verify_draft(
                     shown = m.group(0).lower()
                     violations.append(f"untraceable commitment: '{shown}'")
 
+    # §6: sentence starts are grammar-capitalized, so the first token of each
+    # sentence is exempt from the name check. Accepted gap: a genuine name at a
+    # sentence start is not name-checked (numbers and commitments still are).
+    sent_starts = _sentence_starts(draft_text)
     for m in _NAME_RE.finditer(draft_text):
         if any(s <= m.start() and m.end() <= e for s, e in commitment_spans):
+            continue
+        if m.start() in sent_starts:
             continue
         token = m.group(0)
         if token.lower() in NAME_STOPLIST:
