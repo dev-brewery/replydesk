@@ -275,11 +275,14 @@ class AppJsDraftTests(unittest.TestCase):
         ):
             self.assertIn(marker, output)
 
-    def test_service_json_is_unavailable_placeholder(self):
+    def test_service_json_shape(self):
         import json
         svc = json.loads((REPO / "docs" / "app" / "service.json")
                          .read_text(encoding="utf-8"))
-        self.assertEqual(svc, {"status": "unavailable", "url": None})
+        self.assertEqual(set(svc), {"status", "url"})
+        self.assertIn(svc["status"], {"live", "unavailable"})
+        self.assertIsNone(svc["url"]) if svc["status"] == "unavailable" \
+            else self.assertTrue(svc["url"].startswith("https://"))
 
     def test_index_html_has_draft_cards_container(self):
         html = (REPO / "docs" / "app" / "index.html").read_text(
