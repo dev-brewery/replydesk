@@ -33,6 +33,13 @@ _OFFLINE_NOTE = (
     "Offline mode: triage ran locally; replies below are labeled template "
     "drafts because no model client is configured."
 )
+# Shown when --online was requested but the client could not be built; the run
+# degrades to the same labeled template path, with the reason. Never contains
+# endpoint URLs, keys, or file contents — only the failure class.
+_ONLINE_DEGRADED_NOTE = (
+    "Online mode unavailable ({}): triage ran locally; replies below are "
+    "labeled template drafts."
+)
 
 # Profile placeholder for owner-pasted runs; the UI is single-business for now.
 _DEFAULT_PROFILE = BusinessProfile(name="my business", kind="local shop", city="town")
@@ -74,10 +81,10 @@ class _OfflineClient:
 
 
 def _owner_run_html(tone_text: str, reviews_text: str, *, error: str = "",
-                    offline_note: bool = False, run_result: RunResult | None = None) -> str:
+                    note_text: str = "", run_result: RunResult | None = None) -> str:
     note_html = ""
-    if offline_note:
-        note_html = ('<div class="banner">{}</div>'.format(escape_text(_OFFLINE_NOTE)))
+    if note_text:
+        note_html = ('<div class="banner">{}</div>'.format(escape_text(note_text)))
     if run_result is not None:
         results = render_run(run_result, title="replydesk results")
         # Re-render the form above the results by stitching the bodies.
@@ -144,10 +151,10 @@ def _demo_unavailable_html(detail: str) -> str:
 
 
 class _Handler(http.server.BaseHTTPRequestHandler):
-    # Set by make_server: the LLM client for /run and whether to add the
-    # offline-mode note. demo_mode serves the fixture run read-only.
+    # Set by make_server: the LLM client for /run and the banner note to show
+    # on results ("" for none). demo_mode serves the fixture run read-only.
     client = None
-    offline_note = True
+    note_text = _OFFLINE_NOTE
     demo_mode = False
     env_path = ".env"
 
@@ -220,7 +227,7 @@ class _Handler(http.server.BaseHTTPRequestHandler):
             tone_guide, _DEFAULT_PROFILE, reviews, self.client, today=_today()
         )
         page = _owner_run_html(
-            tone_text, reviews_text, offline_note=self.offline_note, run_result=result
+            tone_text, reviews_text, note_text=self.note_text, run_result=result
         )
         self._send_html(page)
 
@@ -234,16 +241,48 @@ def _today():
     return date.today()
 
 
-def make_server(host: str, port: int, *, client, offline_note: bool,
-                demo_mode: bool, env_path: str = ".env") -> http.server.ThreadingHTTPServer:
-    """Build the server with handler configuration baked in (for tests too)."""
+def make_server(host: str, port: int, *, client, offline_note: bool = False,
+                note_text: str = "", demo_mode: bool = False,
+                env_path: str = ".env") -> http.server.ThreadingHTTPServer:
+    """Build the server with handler configuration baked in (for tests too).
+
+    ``offline_note=True`` is shorthand for the default offline banner;
+    ``note_text`` overrides the banner text (used for degraded --online).
+    """
+    if offline_note and not note_text:
+        note_text = _OFFLINE_NOTE
     handler = type("BoundHandler", (_Handler,), {
         "client": client,
-        "offline_note": offline_note,
+        "note_text": note_text,
         "demo_mode": demo_mode,
         "env_path": env_path,
     })
     return http.server.ThreadingHTTPServer((host, port), handler)
+
+
+def online_client(env_path: str):
+    """Build the online client from an .env file.
+
+    Returns ``(HttpLLM, None)`` on success, or ``(None, reason)`` on any
+    configuration failure (missing file, missing/blank values, bad values).
+    The reason names only the failure class — never file contents, URLs, or
+    keys — so it is safe to print and render.
+    """
+    try:
+        config = load_env_config(env_path)
+    except OSError:
+        return None, f"could not read {env_path}"
+    missing = [name for name in ("LLM_BASE_URL", "LLM_MODEL")
+               if not config.get(name)]
+    if missing:
+        return None, f"{env_path} is missing {', '.join(missing)}"
+    try:
+        return HttpLLM(
+            config["LLM_BASE_URL"], config["LLM_MODEL"],
+            api_key=config.get("LLM_API_KEY", ""),
+        ), None
+    except Exception as exc:  # defensive: bad values must not crash startup
+        return None, f"invalid client configuration ({exc.__class__.__name__})"
 
 
 def main(argv=None) -> None:
@@ -254,22 +293,30 @@ def main(argv=None) -> None:
                         help="draft via the configured LLM (reads .env)")
     parser.add_argument("--port", type=int, default=DEFAULT_PORT)
     parser.add_argument("--host", default=DEFAULT_HOST)
+    parser.add_argument("--env", default=".env",
+                        help="path to the .env file (online mode only)")
     args = parser.parse_args(argv)
 
+    note_text = ""
     if args.online:
-        config = load_env_config(".env")
-        client = HttpLLM(config["LLM_BASE_URL"], config["LLM_MODEL"],
-                         api_key=config["LLM_API_KEY"])
-        offline_note = False
+        client, degraded = online_client(args.env)
+        if degraded is None:
+            print("online mode: drafting via the configured endpoint")
+        else:
+            # Every --online startup failure degrades to the labeled template
+            # path with a clear note; the app never crashes on configuration.
+            print(f"online mode unavailable ({degraded}); "
+                  "falling back to labeled template drafts")
+            client = _OfflineClient()
+            note_text = _ONLINE_DEGRADED_NOTE.format(degraded)
     elif args.demo:
         client = _OfflineClient()  # demo run needs no client
-        offline_note = False
     else:
         client = _OfflineClient()
-        offline_note = True
+        note_text = _OFFLINE_NOTE
 
     httpd = make_server(args.host, args.port, client=client,
-                        offline_note=offline_note, demo_mode=args.demo)
+                        note_text=note_text, demo_mode=args.demo)
     print(f"replydesk listening on http://{args.host}:{args.port}/")
     try:
         httpd.serve_forever()
