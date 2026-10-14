@@ -59,10 +59,16 @@ def parse_reviews(text: str) -> list[Review]:
 # Page-copy mode: auditable pattern tables (module top, like triage.py).
 # ---------------------------------------------------------------------------
 
-# Star glyph runs. Full stars: ★ U+2605, ⭐ U+2B50. Empty: ☆ U+2606.
+# Star glyph runs. Full stars: ★ U+2605, ⭐ U+2B50, and Google Maps' private-use
+# star U+E838 (real page copies carry star rows made of it). Empty: ☆ U+2606.
 # A half marker (½) floors to the lower whole star by simply not counting.
-_FULL_STAR_CHARS = "★\u2b50"
-_GLYPH_RUN_RE = re.compile(rf"^[★☆⭐½\s]*[★][★☆⭐½\s]*$")
+# Google row-icon PUA codepoints (U+E8DC, U+E80D, U+E5D4, U+E88E) appear as
+# neutral filler inside a glyph-run line only; they never count toward rating.
+_FULL_STAR_CHARS = "★\u2b50\ue838"
+_RUN_FILLER_CHARS = "\ue8dc\ue80d\ue5d4\ue88e"
+_GLYPH_RUN_RE = re.compile(
+    rf"^[★☆⭐½\ue838{_RUN_FILLER_CHARS}\s]*[★\ue838][★☆⭐½\ue838{_RUN_FILLER_CHARS}\s]*$"
+)
 _HALF_STAR_RE = re.compile(r"[½\u00bd]")
 
 # Conservative numeric forms: '4/5', '4 out of 5', 'Rated 4/5'. Whole numbers

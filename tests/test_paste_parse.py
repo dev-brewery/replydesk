@@ -175,6 +175,56 @@ class RobustnessTests(unittest.TestCase):
         self.assertEqual([], reviews)
 
 
+class GooglePrivateUseStarTests(unittest.TestCase):
+    """Real Google Maps page copies carry star rows of U+E838 (PUA)."""
+
+    E838 = "\ue838"
+    FILLER = "\ue8dc\ue80d\ue5d4\ue88e"
+
+    def test_pua_star_run_parses_five(self):
+        text = ("Reviewer One\n12 reviews\n" + self.E838 * 5
+                + "\n2 days ago\nGreat coffee and quick service.\n")
+        reviews = parse_paste(text)
+        self.assertEqual(1, len(reviews))
+        self.assertEqual(5, reviews[0].stars)
+
+    def test_pua_run_with_filler_counts_only_stars(self):
+        text = ("Reviewer Two\n" + self.FILLER + self.E838 * 4
+                + "\na week ago\nNice pastries.\n")
+        reviews = parse_paste(text)
+        self.assertEqual(1, len(reviews))
+        self.assertEqual(4, reviews[0].stars)
+
+    def test_mixed_regular_and_pua_stars_both_count(self):
+        text = ("Reviewer Three\n" + "\u2605\u2605" + self.E838 * 2
+                + "\nOctober 12\nQuiet patio.\n")
+        reviews = parse_paste(text)
+        self.assertEqual(1, len(reviews))
+        self.assertEqual(4, reviews[0].stars)
+
+    def test_pua_run_without_full_star_stays_unusable(self):
+        text = self.FILLER + "\njust decoration text"
+        self.assertEqual([], parse_paste(text))
+
+    def test_three_probe_shapes(self):
+        meta_full = ("Riverside Coffee Bar\n4.2\n1,048 reviews\n"
+                     "Coffee shop \u00b7 Open until 6 PM\n\n"
+                     "Jordyn Ellis\n12 reviews\n" + self.E838 * 5
+                     + "\n2 days ago\nThe cortado is great.\n")
+        no_meta = ("Jordyn Ellis\n" + self.E838 * 5
+                   + "\n2 days ago\nThe cortado is great.\n")
+        reviews_meta = ("Jordyn Ellis\n12 reviews \u00b7 3 photos\n"
+                        + self.E838 * 5
+                        + "\n2 days ago\nThe cortado is great.\n")
+        for label, text in (("full", meta_full), ("no-meta", no_meta),
+                            ("reviews-photos", reviews_meta)):
+            with self.subTest(shape=label):
+                reviews = parse_paste(text)
+                self.assertEqual(1, len(reviews))
+                self.assertEqual(5, reviews[0].stars)
+                self.assertEqual("The cortado is great.", reviews[0].text)
+
+
 class AppReexportTests(unittest.TestCase):
     def test_app_reexports_all_three_names(self):
         import app
