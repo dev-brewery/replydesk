@@ -73,14 +73,60 @@ class ServerTests(unittest.TestCase):
         self.assertIn("5 | review text", html)
         self.assertIn("<textarea", html)
 
-    def test_post_run_offline_renders_badges_and_note(self):
-        body = urllib.parse.urlencode({
+    def test_get_form_header_steps_and_privacy(self):
+        _, html = self._request("GET", "/")
+        self.assertIn("1. Paste your reviews", html)
+        self.assertIn("2. Describe how you talk", html)
+        self.assertIn("3. Copy out the replies", html)
+        self.assertIn("No account. Nothing is stored.", html)
+        self.assertIn("Your words stay on this machine.", html)
+
+    # Synthetic page copy: enough of a Google-style reviews dump for the
+    # heuristic parser (anchors + reviewer name + date + text).
+    PAGE_DUMP = (
+        "Google reviews\n"
+        "4.6\n"
+        "★★★★\n"
+        "Jamie Rivers\n"
+        "3 days ago\n"
+        "best coffee on the block, always warm hello\n"
+        "Read more\n"
+        "★★★\n"
+        "Sam Lee\n"
+        "a week ago\n"
+        "my order was cold twice this month\n"
+    )
+
+    def _run_body(self, reviews_text):
+        return urllib.parse.urlencode({
             "tone": "# Voice\nWarm, plain, short.\n\n"
                     "# Facts I'll stand behind\n- we open at 7am",
-            "reviews": "5 | the barista remembered my order\n"
-                       "2 | my order was cold\n"
-                       "1 | I will sue, this is a legal matter",
+            "reviews": reviews_text,
         }).encode()
+
+    def test_post_page_copy_parses_and_previews(self):
+        response, html = self._request("POST", "/run",
+                                       body=self._run_body(self.PAGE_DUMP))
+        self.assertEqual(response.status, 200)
+        self.assertIn("Found 2 reviews from your paste", html)
+        self.assertIn("4 stars", html)
+        self.assertIn("3 stars", html)
+        self.assertIn("best coffee on the block", html)
+        self.assertIn("badge-", html)  # the run itself still rendered
+
+    def test_post_zero_found_returns_manual_hint(self):
+        response, html = self._request(
+            "POST", "/run", body=self._run_body("a lovely place indeed"))
+        self.assertEqual(response.status, 400)
+        self.assertIn("could not find any reviews", html)
+        self.assertIn("manual lines", html)
+        self.assertIn("5 | best coffee on the block", html)
+
+    def test_post_run_offline_renders_badges_and_note(self):
+        body = self._run_body(
+            "5 | the barista remembered my order\n"
+            "2 | my order was cold\n"
+            "1 | I will sue, this is a legal matter")
         response, html = self._request("POST", "/run", body=body)
         self.assertEqual(response.status, 200)
         self.assertIn("badge-", html)  # triage badges present

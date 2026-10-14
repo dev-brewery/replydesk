@@ -36,13 +36,18 @@ RULED (D1, 2026-10-13; guidelines §10 Q1). Everything else runs unblocked today
 | T16 | Screenshots of demo + app UI into `docs/` | T10, T12 | — | D4, D5 |
 | T17 | Custom domain `replydeskhq.tech` | T13 | **owner Q4** | A8 |
 | T18 | Final offline + privacy audit (`tools/final_audit.py`) | T12 | — | A7, A9, A10 |
+| T19 | `paste_parse.py` smart page-paste parser | T10 | — | A1, A10 |
+| T20 | Self-explaining UI: 3-step flow, preview, privacy copy | T19 | — | A1, A7, A9 |
 
 Ordering rationale (guidelines §9): offline demo spine T01–T12 lands before anything
 remote; the A5 verifier + fallback (T06/T08) lands before Thursday's first-user
 session; online work T14+ comes after the offline spine is proven; nothing delays the
 post past Saturday. T14a (owner ruling D5-B) lands right after the online path it
 refines; it touches only `draft.py`/tests and depends on T07 alone, so it is
-parallel-safe with render/app work.
+parallel-safe with render/app work. T19/T20 (owner product ruling 2026-10-14
+evening: manual per-review paste is not a payable flow — both in existing scope,
+no criteria changes) land before Thursday evening's first-user session; T19 is a
+pure parser the app layer consumes in T20.
 
 ---
 
@@ -287,3 +292,52 @@ parallel-safe with render/app work.
   scanner behavior).
 - **Acceptance:** Suite green; `py tools/final_audit.py` exits 0 with all sections
   PASS on the final tree; scanner test proves a planted pattern is caught.
+
+## T19 — `paste_parse.py` — smart page-paste parser
+
+- **Goal:** `parse_paste(text) -> list[Review]` per ARCHITECTURE §2 (owner product
+  ruling 2026-10-14: manual per-review paste is not a payable flow — the user
+  pastes a whole reviews page once). Accepts EITHER the existing manual
+  `5 | text` lines (strict behavior unchanged; the single implementation of
+  `parse_reviews` / `ReviewsFormatError` moves to `paste_parse.py` and `app.py`
+  re-exports both, so existing callers and tests stay green — disclose any test
+  tweak in the commit) OR a raw plain-text browser copy of a Google Business
+  reviews dialog / Yelp reviews page: star-anchored segmentation (glyph runs
+  ★/☆/⭐, halves floor to the lower whole star; conservative numeric `4/5` forms),
+  reviewer-name / relative-date / calendar-date lines recognized as scaffolding
+  and dropped — never entering `Review.text`; noise (owner responses, friend
+  counts, UI strings) dropped via module-top pattern tables like `triage.py`'s.
+  Page mode never raises; fewer than 1 usable review → `[]`. Dates are parser
+  input only, never stored on `Review` (pinned `FIXTURE_DATE` rules untouched);
+  parsing is local and in-memory — not scraping (no network, no platform APIs).
+- **Files:** `replydesk/paste_parse.py`, `app.py` (re-export edit only),
+  `tests/test_paste_parse.py`.
+- **Acceptance:** Suite green offline; tests cover: synthetic Google-shape and
+  Yelp-shape dumps → correct stars + text per review; mixed garbage tolerance
+  (noise/scaffolding dropped, never crashes); manual lines still parse incl.
+  existing error cases; page mode returns `[]` on unusable input; date/name lines
+  provably excluded from `Review.text`. (The preview that surfaces the found
+  count is T20's UI; T19 proves the parser can power it.) Fixtures are SYNTHETIC
+  only (A10): fictional reviewers/content, real-copy shape; the orchestrator's
+  real-shape sample stays in gitignored `out/` for local validation only — if it
+  is absent at build time, proceed on the synthetic spec and say so in stdout;
+  never block on it, never commit it.
+
+## T20 — Self-explaining UI pass
+
+- **Goal:** `app.py` flow + copy per ARCHITECTURE §2: plain-words three-step header
+  (1. paste the page & describe your voice — 2. we sort and draft — 3. copy out
+  what you like); explicit "no account, nothing stored, nothing posted without
+  you" line; paste-guidance hint; `POST /preview` found-reviews step (count +
+  stars/excerpts + confirm action; hidden fields re-carry tone guide and raw
+  paste — stateless, no JS) run **before** `/run` drafts; a paste yielding no
+  usable review re-renders the form with a manual-lines fallback hint (no dead
+  ends). Result cards stay `render.py`'s — no new framework: still stdlib, still
+  offline-first, no JS.
+- **Files:** `app.py`, `tests/test_app.py` (extend; a separate
+  `tests/test_ui_flow.py` is fine instead).
+- **Acceptance:** Suite green offline; tests assert the new copy/preview elements:
+  the step header, the privacy line, the paste guidance, the preview surfacing the
+  found count before drafting (T19's deferred acceptance), and the zero-found
+  fallback hint; existing behavior (offline note, `[Template` labels, loopback
+  bind, `.env` untouched offline) unchanged.

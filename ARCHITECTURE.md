@@ -16,6 +16,7 @@ replydesk/                  # python package
   __init__.py
   model.py                  # dataclasses + enums (no logic beyond helpers)
   toneguide.py              # parse/validate owner tone guide text
+  paste_parse.py            # T19: parse a manual-lines or raw page paste -> Reviews
   triage.py                 # deterministic triage rules (A2/A3)
   verifier.py               # A5 fact-grounding check (pure, deterministic)
   draft.py                  # drafting pipeline: prompt -> verify -> retry -> fallback
@@ -119,6 +120,43 @@ No headings at all → everything is voice, facts empty (verifier gets stricter,
 safe). Empty/whitespace-only input raises `ToneGuideError`. Bullets under the facts
 heading become `facts`; prose there is split on sentence ends. Keep the parser ~40 lines.
 
+### `replydesk/paste_parse.py` (T19)
+
+```python
+def parse_paste(text: str) -> list[Review]
+# also owns parse_reviews / ReviewsFormatError (moved from app.py, re-exported there)
+```
+
+Owner paste parsing, from the owner's 2026-10-14 product ruling (manual per-review
+paste is not a payable flow — the user pastes a whole reviews page once). One
+function accepts either shape:
+
+- **Manual lines** — every non-blank line matches `5 | text`: the strict manual
+  parser applies, behavior and errors unchanged (its single implementation moves
+  here from `app.py`, which re-exports both names — existing callers/tests stay
+  green).
+- **Page copy** — anything else: a heuristic, **never-raising** parse of a
+  plain-text browser copy of a Google Business reviews dialog or a Yelp reviews
+  page. This is parsing, not scraping (out-of-scope guard): no network, no
+  platform APIs — the human copies the text; the parser runs locally, in-memory.
+  - Segments are anchored on a **star rating**: a glyph run (★/☆/⭐; halves floor
+    to the lower whole star, clamped to 1–5) or a conservative numeric form
+    (`4/5`, `4 out of 5`, `Rated 4/5`). Text runs from after the anchor to the
+    next anchor; lines before the anchor in a segment (reviewer name, relative or
+    calendar date — "2 days ago", "a week ago", "Oct 12") are scaffolding:
+    recognized to help splitting, then **dropped** — they never enter
+    `Review.text`, so no untraceable date/name tokens ride into drafts. Dates are
+    parser input only, never stored on `Review`; the pinned `FIXTURE_DATE` rules
+    are untouched.
+  - Known noise (owner-response markers, friend/review counts, UI strings such as
+    share/help prompts) is dropped via pattern tables. `STAR_`, `DATE_`, and
+    `NOISE_` patterns live in one auditable block at module top, like
+    `triage.py`'s rule table.
+  - A segment without a star anchor, or without usable text after scaffolding, is
+    discarded — unknown segments are ignored; the parse never crashes. Fewer than
+    one usable review → `[]` (the caller falls back, below).
+  - `review_id` is `p1, p2, …` in document order.
+
 ### `replydesk/triage.py`
 
 ```python
@@ -194,18 +232,26 @@ def demo_run() -> RunResult                # full offline pipeline over demo fix
 ### `app.py`
 
 ```python
-def parse_reviews(text: str) -> list[Review]   # lines: "5 | review text"; skips blanks
+def parse_reviews(text: str) -> list[Review]   # moved to paste_parse.py; re-exported here
 def main(argv=None) -> None                    # argparse: --demo, --online, --port, --host
 ```
 
 Stdlib `http.server` on `127.0.0.1` (loopback default; committed code never contains a
-real hostname). `GET /` form (tone guide textarea, reviews textarea, format hint);
-`POST /run` re-renders the form plus results. `--demo` serves the fixture run read-only.
-Modes: **offline** (default; triage runs, drafts come straight from the labeled
-template path with an "offline mode" note; never touches `.env`), **demo**
-(fixtures via `FixtureLLM`), **online** (`--online`; reads `.env` via
-`load_env_config` → `HttpLLM`, 300 s timeout, labeled template fallback on any
-client error).
+real hostname). **Three-step self-explaining flow (T20):** `GET /` renders the form
+under a plain-words step header — *1. paste the page & describe your voice · 2. we
+sort and draft · 3. copy out what you like* — with the explicit line "no account,
+nothing stored, nothing posted without you" and paste guidance (paste the whole
+Google/Yelp reviews page exactly as copied, or one `5 | text` line per review);
+`POST /preview` parses via `parse_paste` and shows the found-reviews count plus
+stars/text excerpts with a confirm action (no JS: hidden form fields re-carry tone
+guide and raw paste — stateless); `POST /run` re-parses (idempotent), runs the
+pipeline, and re-renders the form plus results. A paste yielding no usable review
+re-renders the form with a manual-lines fallback hint — no dead ends. `--demo`
+serves the fixture run read-only. Modes: **offline** (default; triage runs, drafts
+come straight from the labeled template path with an "offline mode" note; never
+touches `.env`), **demo** (fixtures via `FixtureLLM`), **online** (`--online`; reads
+`.env` via `load_env_config` → `HttpLLM`, 300 s timeout, labeled template fallback on
+any client error).
 
 ---
 
@@ -217,7 +263,9 @@ client error).
         ┌────────▼────────┐                    ┌────────▼─────────┐
         │ app.py form     │                    │ fixtures/demo/*  │
         └────────┬────────┘                    └────────┬─────────┘
-                 │ parse_reviews / load_demo_fixtures             │
+                 │ paste_parse.parse_paste / load_demo_fixtures     │
+                 ▼                                                │
+        found-reviews preview (T20: count + excerpts; confirm)     │
                  ▼                                                ▼
         ToneGuide, list[Review]  ──► triage.triage_all ──► TriageDecision per review
                  │                        │
@@ -423,6 +471,13 @@ blocks on the client.
   offline run" banner. T15's real-run refresh replaces them with genuine assist
   outputs when it runs. Determinism holds either way (committed fixtures in, same
   bytes out).
+- **Paste-parser fixtures (T19).** Committed fixtures for `paste_parse` are
+  synthetic Google-shape and Yelp-shape dumps — fictional reviewers, fictional
+  content, structurally shaped like real page copies (A10). A real-shape sample
+  captured from a public page may live only in gitignored `out/` for local
+  validation; it is never committed. Relative/calendar dates inside paste text
+  are parser input only — dropped before `Review` exists — so the pinned-date
+  rule above is untouched by T19/T20.
 - **Offline mode never reads local config** (§10 item 5): no code path reachable from
   offline/demo mode opens `.env`; only `--online` calls `load_env_config`.
 - **Network policy:** every `HttpLLM` call has the 300 s timeout and transport retries;
@@ -458,6 +513,7 @@ come from this page and the app UI via `tools/screenshot.sh` only (binary-safe; 
 | Week-1 failure modes (image corruption, location leaks, weekday drift) | Kit rules already in force: binary via `cp`/`screenshot.sh`, `.gitattributes` binary attrs, pre-commit privacy guard (never bypassed), calendar pre-verified in §8. |
 | Custom-domain DNS misses publish (§10 Q4) | Post links the github.io URL as fallback; domain swap is a one-line edit + re-push. |
 | Core triage-assist adds one LLM call per thank-you review (latency, failure surface) | Single call, `max_tokens=512`, no assist-level retry; malformed output / error / fixture miss → deterministic result stands; offline and demo never consult the network (§5, §7). |
+| Heuristic page-paste parser mis-reads a real page copy (T19) | Anchor on star ratings only; conservative numeric forms; scaffolding (names/dates) and noise dropped, never injected into `Review.text`; <1 usable review → manual-lines fallback hint (no dead end); synthetic Google/Yelp-shape tests plus local validation against a gitignored real-shape sample; worst case = manual lines, which still work. |
 
 ## 10. Pending owner determinations wired into this design
 

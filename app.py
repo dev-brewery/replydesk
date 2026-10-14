@@ -12,6 +12,7 @@ Stdlib ``http.server`` bound to the loopback address. Modes:
 
 import argparse
 import http.server
+import re
 import urllib.parse
 from http import HTTPStatus
 
@@ -29,7 +30,20 @@ DEFAULT_PORT = 8000
 VOICE_PLACEHOLDER = "# Voice\nHow I talk to customers...\n\n# Facts I'll stand behind\n- we open at 7am"
 REVIEWS_PLACEHOLDER = "5 | best coffee on the block\n2 | my order was cold"
 
-_FORMAT_HINT = "One review per line: <code>5 | review text</code> (stars 1&ndash;5)."
+_HEADER_STEPS = (
+    "1. Paste your reviews &mdash; open your Google or Yelp reviews page, "
+    "select all, copy, paste it here (or type lines like <code>5 | your "
+    "review</code>). 2. Describe how you talk. 3. Copy out the replies you "
+    "like."
+)
+_PRIVACY_LINE = ("No account. Nothing is stored. Nothing is posted without you. "
+                 "Your words stay on this machine.")
+_FORMAT_HINT = ("One review per line: <code>5 | review text</code> "
+                "(stars 1&ndash;5) &mdash; or just paste the whole page above.")
+_ZERO_FOUND_HINT = (
+    "We could not find any reviews in that paste. Try typing manual lines "
+    "instead, one per line, like: <code>5 | best coffee on the block</code>."
+)
 _OFFLINE_NOTE = (
     "Offline mode: triage ran locally; replies below are labeled template "
     "drafts because no model client is configured."
@@ -56,11 +70,27 @@ class _OfflineClient:
         raise LLMError("offline mode: no model client configured (use --online)")
 
 
+def _found_preview_html(reviews: list) -> str:
+    """Found-reviews preview: rating + first line of each parsed review."""
+    items = "".join(
+        '<li>{} stars &mdash; {}</li>'.format(
+            r.stars, escape_text(r.text.split(".")[0][:120] or r.text))
+        for r in reviews
+    )
+    return (
+        '<div class="preview"><p><strong>Found {} reviews from your paste'
+        "&mdash; check them below.</strong></p><ul>{}</ul></div>"
+    ).format(len(reviews), items)
+
+
 def _owner_run_html(tone_text: str, reviews_text: str, *, error: str = "",
-                    note_text: str = "", run_result: RunResult | None = None) -> str:
+                    note_text: str = "", run_result: RunResult | None = None,
+                    found: list | None = None) -> str:
     note_html = ""
+    if found is not None:
+        note_html += _found_preview_html(found)
     if note_text:
-        note_html = ('<div class="banner">{}</div>'.format(escape_text(note_text)))
+        note_html += ('<div class="banner">{}</div>'.format(escape_text(note_text)))
     if run_result is not None:
         results = render_run(run_result, title="replydesk results")
         # Re-render the form above the results by stitching the bodies.
@@ -79,6 +109,9 @@ _FORM_CSS = (
     ".error{color:#a00;font-weight:600}"
     ".banner{background:#fffbdd;border:1px solid #d9d26e;padding:.6rem 1rem;"
     "border-radius:.3rem;margin-top:1rem}"
+    ".privacy{background:#eef7ee;border:1px solid #9dc99d;padding:.6rem 1rem;"
+    "border-radius:.3rem;margin-top:1rem;font-weight:600}"
+    ".preview ul{margin:.4rem 0 0 1.2rem;padding:0;color:#444}"
     "button{margin-top:1rem;padding:.4rem 1.2rem;font:inherit}"
 )
 
@@ -93,6 +126,8 @@ def _form_html(tone_text: str, reviews_text: str, *, error: str = "") -> str:
         '<meta name="viewport" content="width=device-width, initial-scale=1">'
         "<title>replydesk</title><style>{css}</style></head><body>"
         "<h1>replydesk</h1>"
+        '<p class="steps">' + _HEADER_STEPS + "</p>"
+        '<div class="privacy">' + _PRIVACY_LINE + "</div>"
         "<form method=\"post\" action=\"/run\">"
         '<label for="tone">Tone guide</label>'
         '<textarea id="tone" name="tone" placeholder="{ph_voice}">{tone}</textarea>'
@@ -111,7 +146,7 @@ def _form_html(tone_text: str, reviews_text: str, *, error: str = "") -> str:
         reviews=escape_text(reviews_text),
         hint=_FORMAT_HINT,
         error=error_html,
-        css=_FORM_CSS.replace("{", "{{").replace("}", "}}"),
+        css=_FORM_CSS,  # braces in a format value are inserted verbatim
     )
 
 
@@ -184,17 +219,26 @@ class _Handler(http.server.BaseHTTPRequestHandler):
                 HTTPStatus.BAD_REQUEST,
             )
             return
+        # Page paste first; manual 'N |' lines fall back to the strict
+        # parser so their precise errors are kept.
         try:
-            reviews = parse_reviews(reviews_text)
-        except ReviewsFormatError as exc:
-            self._send_html(
-                _form_html(tone_text, reviews_text, error=str(exc)),
-                HTTPStatus.BAD_REQUEST,
-            )
-            return
+            reviews = parse_paste(reviews_text)
+        except ReviewsFormatError:
+            reviews = []
+        if not reviews:
+            first = next((l for l in reviews_text.splitlines() if l.strip()), "")
+            if re.match(r"^\s*\d+\s*\|", first):  # manual-shaped: keep precise errors
+                try:
+                    reviews = parse_reviews(reviews_text)
+                except ReviewsFormatError as exc:
+                    self._send_html(
+                        _form_html(tone_text, reviews_text, error=str(exc)),
+                        HTTPStatus.BAD_REQUEST,
+                    )
+                    return
         if not reviews:
             self._send_html(
-                _form_html(tone_text, reviews_text, error="no reviews entered"),
+                _form_html(tone_text, reviews_text, error=_ZERO_FOUND_HINT),
                 HTTPStatus.BAD_REQUEST,
             )
             return
@@ -203,7 +247,8 @@ class _Handler(http.server.BaseHTTPRequestHandler):
             tone_guide, _DEFAULT_PROFILE, reviews, self.client, today=_today()
         )
         page = _owner_run_html(
-            tone_text, reviews_text, note_text=self.note_text, run_result=result
+            tone_text, reviews_text, note_text=self.note_text, run_result=result,
+            found=reviews,
         )
         self._send_html(page)
 
