@@ -1,4 +1,4 @@
-"""T21a tests for docs/app/rd.js — node-driven port of the paste-parse suite.
+"""T21a tests for docs/rd.js — node-driven port of the paste-parse suite.
 
 Runs node (offline) on a driver script that loads rd.js and asserts the same
 synthetic cases as tests/test_paste_parse.py. Skips cleanly if node is absent
@@ -13,7 +13,7 @@ import unittest
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-RD_JS = REPO / "docs" / "app" / "rd.js"
+RD_JS = REPO / "docs" / "rd.js"
 
 GOOGLE_DUMP = """\
 Riverside Coffee Bar

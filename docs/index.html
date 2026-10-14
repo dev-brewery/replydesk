@@ -1,23 +1,155 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>replydesk — demo run</title><style>
-body { font-family: system-ui, sans-serif; margin: 2rem auto; max-width: 46rem;
-       padding: 0 1rem; color: #1c1c1c; background: #fafafa; }
-h1 { font-size: 1.4rem; }
-.banner { background: #fff8e1; border: 1px solid #e0c36a; padding: .6rem .9rem;
-          border-radius: .4rem; margin-bottom: 1.2rem; }
-.card { background: #fff; border: 1px solid #ddd; border-radius: .5rem;
-        padding: 1rem 1.2rem; margin-bottom: 1.2rem; }
-.stars { color: #c8860a; letter-spacing: .1em; }
-.badge { display: inline-block; padding: .15rem .6rem; border-radius: 999px;
-         font-size: .8rem; font-weight: 600; margin-left: .5rem; }
-.badge-thank_you { background: #e3f4e3; color: #1d6a1d; }
-.badge-fix_it { background: #e6eefb; color: #1c4c9c; }
-.badge-needs_human { background: #fbe7e7; color: #a11d1d; }
-.reason { color: #555; font-size: .9rem; }
-.review-text { white-space: pre-wrap; }
-.draft { margin-top: .8rem; }
-.draft textarea { width: 100%; min-height: 5.5rem; font: inherit;
-                  box-sizing: border-box; }
-.meta { font-size: .8rem; color: #555; margin-top: .3rem; }
-footer { color: #888; font-size: .85rem; margin-top: 2rem; }
-</style></head><body><nav class="topnav">replydesk &mdash; <a href="/">recorded demo</a> <a href="/app/">Open the app &rarr; sign up</a></nav><h1>replydesk — demo run</h1><div class="banner">This is a <strong>recorded offline run</strong> built from demo fixtures &mdash; no live services were used.</div><p class="meta">Business: Ridgeline Plumbing &middot; Generated: 2026-10-12</p><div class="card"><div><span class="stars">★★★★★</span><span class="badge badge-thank_you">THANK YOU</span></div><p class="reason">Reason: no rule matched; 5 stars &gt;= 4 -&gt; thank-you</p><p class="review-text">Friendly people from the first call to the final check. They fixed a dripping faucet the same week I reached out and left the kitchen spotless.</p><div class="draft"><label for="draft-ty-1">MODEL draft</label><textarea id="draft-ty-1" readonly>Thank you for taking the time to write this. A dripping faucet sounds small, but I&#x27;m glad we got someone out the same week so it wasn&#x27;t dripping into your weekend. And I appreciate you noticing the kitchen — we should leave every work site as clean as we found it, so hearing it actually happened means a lot. That friendliness from the first call comes from the whole crew, and I&#x27;ll pass your kind words along. If anything else acts up, you know where to find us.</textarea><div class="meta">Source: MODEL &middot; Verifier: verified</div></div></div><div class="card"><div><span class="stars">★★★★☆</span><span class="badge badge-fix_it">FIX IT</span></div><p class="reason">Reason: triage assist flip: job required a second visit to complete</p><p class="review-text">They had to come back a second time to finish the water heater swap, but everything works now.</p><div class="draft"><label for="draft-ty-2">MODEL draft</label><textarea id="draft-ty-2" readonly>We are sorry the water heater swap needed a second visit. You are right to expect the job finished the first time. Your two-year workmanship warranty covers this repair, and we&#x27;ll come back to check the fittings at no charge. Call us any morning and we&#x27;ll make it right.</textarea><div class="meta">Source: MODEL &middot; Verifier: verified</div></div></div><div class="card"><div><span class="stars">★★★★★</span><span class="badge badge-thank_you">THANK YOU</span></div><p class="reason">Reason: no rule matched; 5 stars &gt;= 4 -&gt; thank-you</p><p class="review-text">Showed up on time, wore covers over their boots, and walked me through the shutoff valve before leaving. You can tell the crew takes pride in the work.</p><div class="draft"><label for="draft-ty-3">MODEL draft</label><textarea id="draft-ty-3" readonly>Thank you for this. The boot covers and the shutoff valve walkthrough are exactly the details I care about — you should finish a job knowing your own plumbing a little better than when we arrived. Hearing that the crew took pride in the work means a lot, because it tells me the standards I hold are the ones you actually felt on the ground. Thanks for trusting us with your home and for taking the time to say so.</textarea><div class="meta">Source: MODEL &middot; Verifier: verified</div></div></div><div class="card"><div><span class="stars">★★☆☆☆</span><span class="badge badge-fix_it">FIX IT</span></div><p class="reason">Reason: complaint: matched pattern &#x27;late&#x27;</p><p class="review-text">The plumber showed up almost an hour late and then rushed the install. Not what I paid for.</p><div class="draft"><label for="draft-fx-1">MODEL draft</label><textarea id="draft-fx-1" readonly>That&#x27;s not how a job should go, and I&#x27;m sorry. An hour late is on us, no way around it. And rushing an install worries me more than the lateness - it&#x27;s the kind of shortcut that causes problems later. I&#x27;d like to hear it from you directly. Call us between seven and five, Monday through Saturday, and you&#x27;ll reach a person, not a machine. Every repair we do carries a two-year workmanship warranty, so if the install isn&#x27;t right or doesn&#x27;t hold, we&#x27;ll come back and make it right at no charge.</textarea><div class="meta">Source: MODEL &middot; Verifier: verified</div></div></div><div class="card"><div><span class="stars">★☆☆☆☆</span><span class="badge badge-fix_it">FIX IT</span></div><p class="reason">Reason: complaint: matched pattern &#x27;broken&#x27;</p><p class="review-text">Wrong part put on the first visit, and by nightfall the new valve was leaking and the cabinet floor was a mess. Now the tap is broken too.</p><div class="draft"><label for="draft-fx-2">MODEL draft</label><textarea id="draft-fx-2" readonly>That&#x27;s on us. A wrong part on the first visit, a valve that didn&#x27;t hold overnight, water in your cabinet, and now a broken tap — none of that is the job you paid for, and I won&#x27;t make excuses for it. Here&#x27;s what happens next: call the shop between seven and five, Monday through Saturday, and you&#x27;ll reach a person, not a machine. This repair is covered by our two-year workmanship warranty, so we come back and make it right at no charge to you. Ask for me when you call — if something about a job bothers you, I want to hear it myself.</textarea><div class="meta">Source: MODEL &middot; Verifier: verified</div></div></div><div class="card"><div><span class="stars">★★★☆☆</span><span class="badge badge-fix_it">FIX IT</span></div><p class="reason">Reason: complaint: matched pattern &#x27;dirty&#x27;</p><p class="review-text">Crew left the basement dirty with dust everywhere and nobody came back to sweep it. Disappointing cleanup after a big job.</p><div class="draft"><label for="draft-fx-3">MODEL draft</label><textarea id="draft-fx-3" readonly>Leaving your basement dusty after a big job is on us, and nobody coming back to sweep makes it worse. A tidy work site matters to me as much as the repair itself, and we fell short of that here. No excuses. Call the shop between seven and five, Monday through Saturday, and ask for me. You&#x27;ll reach a person, not a machine. I want to hear this one from you directly so I can find out where our cleanup went wrong.</textarea><div class="meta">Source: MODEL &middot; Verifier: verified</div></div></div><div class="card"><div><span class="stars">★★☆☆☆</span><span class="badge badge-needs_human">NEEDS HUMAN</span></div><p class="reason">Reason: legal: matched pattern &#x27;lawyer&#x27;</p><p class="review-text">This is not getting resolved with another apology. My lawyer will be in touch about the damage from the failed fitting.</p></div><div class="card"><div><span class="stars">★☆☆☆☆</span><span class="badge badge-needs_human">NEEDS HUMAN</span></div><p class="reason">Reason: refund-dispute: matched pattern &#x27;refund&#x27;</p><p class="review-text">I was charged twice for the same service call, and I want a full refund today.</p></div><footer>replydesk &mdash; offline demo run</footer></body></html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>replydesk — review replies in your own voice</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    margin: 0; color: #1f2933; background: #f7f9fb; line-height: 1.5;
+  }
+  header {
+    background: #10365c; color: #fff; padding: 1.5rem 1rem; text-align: center;
+  }
+  header h1 { margin: 0 0 .25rem; font-size: 1.6rem; }
+  header p { margin: 0; color: #cfe0f2; }
+  main { max-width: 34rem; margin: 0 auto; padding: 1.5rem 1rem; }
+  .steps { display: flex; gap: 1rem; margin-bottom: 1.5rem; }
+  .steps div { flex: 1; background: #fff; border: 1px solid #dde3ea;
+    border-radius: 8px; padding: .75rem; font-size: .85rem; }
+  .steps strong { display: block; color: #10365c; }
+  .pricing {
+    text-align: center; background: #eef6ee; border: 1px solid #cbe3cb;
+    border-radius: 8px; padding: .6rem; margin-bottom: 1.5rem; font-size: .9rem;
+  }
+  .card {
+    background: #fff; border: 1px solid #dde3ea; border-radius: 8px;
+    padding: 1.25rem; margin-bottom: 1.25rem;
+  }
+  .card h2 { margin-top: 0; font-size: 1.1rem; color: #10365c; }
+  label { display: block; font-size: .85rem; margin: .6rem 0 .15rem; }
+  input {
+    width: 100%; padding: .5rem; border: 1px solid #b9c4cf;
+    border-radius: 6px; font-size: 1rem;
+  }
+  button {
+    margin-top: .9rem; background: #10365c; border: 0; color: #fff;
+    padding: .55rem 1.2rem; border-radius: 6px; font-size: 1rem; cursor: pointer;
+  }
+  button.secondary { background: #5b7083; }
+  .error { color: #b3261e; font-size: .85rem; min-height: 1.2em; margin-top: .4rem; }
+  .honest { font-size: .8rem; color: #52606d; margin-top: .75rem; }
+  button:disabled { background: #9aa5b1; cursor: not-allowed; }
+  textarea {
+    width: 100%; padding: .5rem; border: 1px solid #b9c4cf;
+    border-radius: 6px; font-size: .95rem; font-family: inherit;
+  }
+  #preview-list { margin: .6rem 0 0; padding-left: 1.2rem; font-size: .9rem; }
+  #preview-list li, #draft-cards li { margin-bottom: .25rem; }
+  #draft-cards { list-style: none; padding: 0; }
+  .badge { display: inline-block; background: #eef3f8; color: #10365c;
+    border-radius: 4px; padding: 0 .4rem; font-size: .8rem; }
+  .src-label { font-size: .8rem; color: #52606d; margin: .5rem 0 .15rem; }
+  .stars { color: #d97706; letter-spacing: 1px; }
+  .hidden { display: none; }
+  footer { text-align: center; color: #7b8794; font-size: .8rem; padding: 1rem; }
+</style>
+</head>
+<body>
+<header>
+  <h1>replydesk</h1>
+  <p>review replies in your own voice</p>
+  <p><a href="/demo/" style="color:#cfe0f2;font-size:.85rem">see a recorded demo</a></p>
+</header>
+<main>
+  <div class="steps">
+    <div><strong>1. Paste</strong> your reviews from Google or Yelp.</div>
+    <div><strong>2. Triage</strong> sorts praise, problems and questions.</div>
+    <div><strong>3. Reply</strong> with drafts in your own tone, then copy them.</div>
+  </div>
+  <div class="pricing">No card needed. Founding plan: $9/month, first month free,
+    invoiced later.</div>
+
+  <div id="auth-view">
+    <div class="card">
+      <h2>Sign up</h2>
+      <form id="signup-form">
+        <label for="su-name">Name</label>
+        <input id="su-name" name="name" type="text" autocomplete="name">
+        <label for="su-email">Email</label>
+        <input id="su-email" name="email" type="email" autocomplete="email">
+        <label for="su-password">Password (at least 8 characters)</label>
+        <input id="su-password" name="password" type="password"
+          autocomplete="new-password">
+        <div class="error" id="signup-error" role="alert"></div>
+        <button type="submit">Sign up</button>
+      </form>
+      <p class="honest">Your account lives in this browser for now — we'll move it to the service at launch.</p>
+    </div>
+    <div class="card">
+      <h2>Log in</h2>
+      <form id="login-form">
+        <label for="li-email">Email</label>
+        <input id="li-email" name="email" type="email" autocomplete="email">
+        <label for="li-password">Password</label>
+        <input id="li-password" name="password" type="password"
+          autocomplete="current-password">
+        <div class="error" id="login-error" role="alert"></div>
+        <button type="submit">Log in</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="workspace-view" class="hidden">
+    <div id="plan-view">
+      <div class="card">
+        <h2>Founding plan &mdash; $9/month. First month free for founding
+          members.</h2>
+        <p class="honest">We'll invoice you by email before the first charge.
+          No card needed now.</p>
+        <button type="button" id="activate-trial">Activate trial</button>
+        <div class="error" id="plan-error" role="alert"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2 id="workspace-greeting">Your workspace</h2>
+      <p id="plan-lock" class="honest">Drafting stays locked until you activate
+        the founding trial &mdash; no card, no charge now.</p>
+      <div id="workspace-body" class="hidden">
+        <label for="tone">How you talk (tone guide)</label>
+        <textarea id="tone" rows="6" placeholder="&#35; Voice&#10;How I talk to customers...&#10;&#10;&#35; Facts I'll stand behind&#10;- we open at 7am"></textarea>
+        <p class="honest">Use the headings # Voice and # Facts I'll stand
+          behind.</p>
+        <label for="bp-name">Business name (optional)</label>
+        <input id="bp-name" type="text" maxlength="60">
+        <label for="bp-kind">What kind of business (optional)</label>
+        <input id="bp-kind" type="text" maxlength="60">
+        <label for="bp-city">City (optional)</label>
+        <input id="bp-city" type="text" maxlength="60">
+        <label for="reviews">Your reviews</label>
+        <textarea id="reviews" rows="8" placeholder="5 | best coffee on the block&#10;2 | my order was cold"></textarea>
+        <p class="honest">Paste your whole Google or Yelp reviews page, or type
+          <code>5 | text</code> lines, one per review.</p>
+        <button type="button" class="secondary" id="preview-button">Preview
+          found reviews</button>
+        <p id="zero-found-hint" class="honest hidden">We could not find any
+          reviews in that paste. Try typing manual lines instead, one per line,
+          like: <code>5 | best coffee on the block</code>.</p>
+        <ul id="preview-list"></ul>
+        <button type="button" id="draft-button" disabled>Draft replies</button>
+        <p id="draft-note" class="honest"></p>
+        <ul id="draft-cards"></ul>
+      </div>
+      <button type="button" class="secondary" id="logout-button">Log out</button>
+    </div>
+  </div>
+</main>
+<footer>replydesk &mdash; founding-plan preview</footer>
+<!-- Bump v on every SPA deploy (rd.js and app.js together) to cache-bust clients. -->
+<script src="rd.js?v=5"></script>
+<script src="app.js?v=5"></script>
+</body>
+</html>

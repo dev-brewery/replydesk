@@ -569,36 +569,37 @@ come from this page and the app UI via `tools/screenshot.sh` only (binary-safe; 
    mandatory, first user on a hosted URL, existing repo/machine/endpoint only,
    founding-trial billing, no new accounts/services/sign-ins. **No further owner
    determination gates the build.** Architect discretions exercised inside that
-   ruling (reversible, on record): SPA at `/app/` with the recorded demo kept at `/`
-   (the brief allowed either); CORS allowlist extended with the
+   ruling (reversible, on record, superseded by the T22d owner ruling): SPA at
+   `/app/` with the recorded demo kept at `/` — the product was later moved to
+   the domain root and the recorded demo to `/demo/`; CORS allowlist extended with the
    `dev-brewery.github.io` Pages origin (testing + fallback; one-line removal);
    PBKDF2 100 000 iterations (tunable constant); SPA draft textareas editable
    (product behavior; the recorded demo page stays read-only).
 
 ---
 
-## 11. Hosted product SPA — `docs/app/` (§3 amendment; T21)
+## 11. Hosted product SPA — `docs/` domain root (§3 amendment; T21; rehomed T22d)
 
 The owner ruling (guidelines §3, amended 2026-10-14): sign-up is mandatory; the first
 user's run happens on a hosted URL; only the existing repo (GitHub + Pages at
 replydeskhq.tech), this machine, and the existing z.ai endpoint may be used. The SPA
 is the fastest honest build inside those constraints.
 
-**Routing (architect call, per brief):** the SPA lives at **`/app/`** — Pages serves
-`docs/app/index.html` at `replydeskhq.tech/app/` (and the github.io fallback). The
-recorded offline demo stays at `/` exactly as §8 specifies; A8/D4/D5 anchors, the
-post's demo link, and existing screenshots keep working. No T21+ task touches
-`docs/index.html` or `tools/build_demo.py` output (see the §8 JS boundary).
+**Routing (T22d owner ruling):** the SPA is the product and lives at the **domain
+root** — Pages serves `docs/index.html` at `https://replydeskhq.tech/` (and the
+github.io fallback). The recorded offline demo moved to `docs/demo/`, served at
+`/demo/`; the product header links to it. `tools/build_demo.py` writes only
+`docs/demo/` output and never touches the product files.
 
 **Files.**
 
 ```
-docs/app/index.html   # single page: inline CSS, no frameworks, no build step, no
+docs/index.html       # single page: inline CSS, no frameworks, no build step, no
                       # external CDNs/assets; view switching; loads rd.js relatively
-docs/app/rd.js        # pure logic (no DOM): parser/triage/template ports + auth and
+docs/rd.js            # pure logic (no DOM): parser/triage/template ports + auth and
                       # card-render helpers; runs under node (module.exports) and
                       # browser (window.rd) for the §11 test harness
-docs/app/service.json # T23: {"status":"available","url":"https://…trycloudflare…"}
+docs/service.json     # T23: {"status":"available","url":"https://…trycloudflare…"}
                       # or {"status":"unavailable"} — committed; public by design
 ```
 
@@ -724,12 +725,12 @@ appears in any response or log.
    answers;
 3. run `cloudflared tunnel --url http://127.0.0.1:8787 --no-autoupdate` and capture
    the printed `https://<random>.trycloudflare.com` URL;
-4. write `docs/app/service.json` — `{"status":"available","url":…}` on success,
+4. write `docs/service.json` — `{"status":"available","url":…}` on success,
    `{"status":"unavailable"}` on any failure; a `-Stop` mode writes unavailable.
 
 `tools/TUNNEL.md` is the runbook: start tunnel → builder commits `service.json` →
 orchestrator push → wait out the Pages rebuild + ~10-min edge cache (**start ≥ 15 min
-before the session**) → verify `replydeskhq.tech/app/` shows the live service →
+before the session**) → verify `replydeskhq.tech/` shows the live service →
 session → flip to `unavailable` → commit + push. The trycloudflare URL is public and
 ephemeral by design (it dies with the process) and carries no owner-infrastructure
 details; the pre-commit privacy guard applies to every commit as always.

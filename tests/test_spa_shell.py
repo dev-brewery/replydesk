@@ -1,4 +1,4 @@
-"""T21b tests for the docs/app/ SPA shell (static assertions on index.html).
+"""T21b tests for the docs/ SPA shell (static assertions on index.html).
 
 The honest copy must render verbatim, all three sign-up fields must exist,
 and the page must stay self-contained: no external URLs, relative rd.js load.
@@ -9,9 +9,9 @@ import unittest
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-INDEX = REPO / "docs" / "app" / "index.html"
-APP_JS = REPO / "docs" / "app" / "app.js"
-RD_JS = REPO / "docs" / "app" / "rd.js"
+INDEX = REPO / "docs" / "index.html"
+APP_JS = REPO / "docs" / "app.js"
+RD_JS = REPO / "docs" / "rd.js"
 
 HONEST_COPY = (
     "Your account lives in this browser for now \u2014 we'll"
@@ -40,13 +40,18 @@ class SpaShellTest(unittest.TestCase):
         self.assertNotRegex(self.app, r"https?://")
 
     def test_relative_script_loads(self):
-        self.assertIn('<script src="rd.js?v=4"></script>', self.html)
-        self.assertIn('<script src="app.js?v=4"></script>', self.html)
+        self.assertIn('<script src="rd.js?v=5"></script>', self.html)
+        self.assertIn('<script src="app.js?v=5"></script>', self.html)
 
     def test_header_and_pricing_copy(self):
         self.assertIn("review replies in your own voice", self.html)
         self.assertIn("$9/month, first month free", self.html)
         self.assertIn("No card needed", self.html)
+
+    def test_header_links_recorded_demo(self):
+        # T22d: the product (domain root) links to the recorded demo at /demo/.
+        self.assertIn('href="/demo/"', self.html)
+        self.assertIn("see a recorded demo", self.html)
 
     def test_workspace_controls_wired(self):
         # T21c replaced the placeholder card with real workspace controls.

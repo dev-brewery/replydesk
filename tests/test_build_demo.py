@@ -45,14 +45,14 @@ class BuildDemoTest(unittest.TestCase):
         self.assertIn("recorded offline run", text)
         self.assertIn(FIXTURE_DATE.isoformat(), text)
 
-    def test_html_carries_app_nav_link(self):
-        """T21b: generated landing page links to the hosted SPA (once)."""
+    def test_html_carries_back_nav_link(self):
+        """T22d: recorded demo page links back to the product at the root (once)."""
         with tempfile.TemporaryDirectory() as tmp:
             html_path, _ = build_demo(tmp)
             text = html_path.read_text(encoding="utf-8")
-        self.assertEqual(text.count('href="/app/"'), 1)
-        self.assertIn(">recorded demo</a>", text)
-        self.assertIn("Open the app &rarr; sign up</a>", text)
+        self.assertEqual(text.count('href="/"'), 1)
+        self.assertIn("&larr; back to replydesk</a>", text)
+        self.assertNotIn("/app/", text)
         self.assertIn("<nav", text)
 
     def test_json_matches_run_and_parses(self):

@@ -1,4 +1,4 @@
-"""T21b tests for docs/app/rd.js auth helpers — node-driven, offline.
+"""T21b tests for docs/rd.js auth helpers — node-driven, offline.
 
 Runs node on a driver script that loads rd.js and exercises sign-up / log-in
 / session / log-out over a Map-backed storage shim, plus PBKDF2 hash
@@ -13,7 +13,7 @@ import unittest
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-RD_JS = REPO / "docs" / "app" / "rd.js"
+RD_JS = REPO / "docs" / "rd.js"
 
 DRIVER = r"""
 'use strict';
@@ -246,9 +246,9 @@ class PlanGateShellTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.html = (REPO / "docs" / "app" / "index.html").read_text(
+        cls.html = (REPO / "docs" / "index.html").read_text(
             encoding="utf-8")
-        cls.app = (REPO / "docs" / "app" / "app.js").read_text(
+        cls.app = (REPO / "docs" / "app.js").read_text(
             encoding="utf-8")
         cls.rd = RD_JS.read_text(encoding="utf-8")
         # Whitespace-normalized view for phrase assertions across wrapped lines.

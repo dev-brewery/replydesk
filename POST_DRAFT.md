@@ -21,7 +21,8 @@ editor at publish time.
 
 <!-- Deployed link + screenshots. -->
 
-**Live demo:** https://replydeskhq.tech/ (fallback: https://dev-brewery.github.io/replydesk/)
+**Live demo (the product):** https://replydeskhq.tech/ (fallback: https://dev-brewery.github.io/replydesk/)
+**Recorded demo (offline run):** https://replydeskhq.tech/demo/
 
 ![replydesk demo](https://raw.githubusercontent.com/dev-brewery/replydesk/main/docs/demo.png)
 

@@ -1,4 +1,4 @@
-"""T21d tests for docs/app/rd.js triage + template ports — node-driven, offline.
+"""T21d tests for docs/rd.js triage + template ports — node-driven, offline.
 
 Mirrors tests/test_triage.py probes against rd.triageReview (every rule group,
 star fall-through, case-sensitive staff-name patterns) and checks
@@ -14,7 +14,7 @@ import unittest
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-RD_JS = REPO / "docs" / "app" / "rd.js"
+RD_JS = REPO / "docs" / "rd.js"
 
 PROBES = [
     # (stars, text, expected category, expected reason substring)

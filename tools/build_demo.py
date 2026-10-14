@@ -1,7 +1,8 @@
 """replydesk demo build: offline fixtures -> committed GitHub Pages demo.
 
-Per ARCHITECTURE §8 (T12): load the demo fixtures, run the offline pipeline
-(`demo_run()`), and write two byte-deterministic files into `docs/`:
+Per ARCHITECTURE §8 (T12, rehomed T22d): load the demo fixtures, run the
+offline pipeline (`demo_run()`), and write two byte-deterministic files into
+`docs/demo/`:
 
 - `index.html`     — self-contained page via `render_run(demo=True)`: inline
                      CSS, no JS, no external assets, demo banner, pinned-date
@@ -28,14 +29,13 @@ from replydesk.render import render_run  # noqa: E402
 
 _DEMO_TITLE = "replydesk — demo run"
 
-# T21b: top nav injected into the generated landing page — links to the
-# recorded demo (itself, at /) and to the hosted SPA. Deterministic: inserted
-# at a fixed point, same bytes every run. The recorded demo page itself is
+# T22d: top nav injected into the recorded demo page — links back to the
+# product, which now lives at the domain root. Deterministic: inserted at a
+# fixed point, same bytes every run. The recorded demo page itself is
 # render_run output; this wrapper is the only place the nav is added.
 _NAV_HTML = (
     '<nav class="topnav">replydesk &mdash; '
-    '<a href="/">recorded demo</a> '
-    '<a href="/app/">Open the app &rarr; sign up</a></nav>'
+    '<a href="/">&larr; back to replydesk</a></nav>'
 )
 
 
@@ -55,7 +55,8 @@ def demo_run_json(run) -> str:
 
 
 def build_demo(out_dir) -> tuple[Path, Path]:
-    """Run the demo pipeline and write docs/index.html + docs/demo_run.json.
+    """Run the demo pipeline and write index.html + demo_run.json in out_dir
+    (the product build targets docs/demo/).
 
     Returns the two written paths. Byte-deterministic: same fixtures in,
     same bytes out, across runs.
@@ -79,8 +80,8 @@ def build_demo(out_dir) -> tuple[Path, Path]:
 
 
 def main() -> int:
-    docs_dir = _REPO_ROOT / "docs"
-    html_path, json_path = build_demo(docs_dir)
+    demo_dir = _REPO_ROOT / "docs" / "demo"
+    html_path, json_path = build_demo(demo_dir)
     print(f"wrote {html_path} ({html_path.stat().st_size} bytes)")
     print(f"wrote {json_path} ({json_path.stat().st_size} bytes)")
     return 0

@@ -5,7 +5,7 @@ out to, so the logic lives in tested Python instead of untestable shell:
 
 - ``parse_tunnel_url`` — extract the ``https://<random>.trycloudflare.com``
   URL from cloudflared's quick-tunnel output (a noisy log stream).
-- ``write_service_json`` — the ``docs/app/service.json`` pointer the hosted
+- ``write_service_json`` — the ``docs/service.json`` pointer the hosted
   SPA fetches (cache-busted): ``{"status": "live", "url": ...}`` when the
   tunnel is up, ``{"status": "unavailable", "url": null}`` otherwise.
 
@@ -56,7 +56,7 @@ def write_service_json(status: str, url: str | None = None,
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="write docs/app/service.json")
+    parser = argparse.ArgumentParser(description="write docs/service.json")
     parser.add_argument("--status", required=True, choices=VALID_STATUSES)
     parser.add_argument("--url", default=None)
     args = parser.parse_args(argv)

@@ -4,12 +4,12 @@ Accountless cloudflared **quick tunnel**: an anonymous binary from the official
 cloudflared GitHub releases — no account, no sign-in, no credentials anywhere.
 The binary lives in `out/bin/` (gitignored, never committed). The only artifact
 that enters the repo is the public, ephemeral `https://<random>.trycloudflare.com`
-URL in `docs/app/service.json`; it dies with the tunnel process and is not a secret.
+URL in `docs/service.json`; it dies with the tunnel process and is not a secret.
 
 ## Before a live session (start ≥ 15 minutes early)
 
 The Pages rebuild plus ~10 minutes of edge cache lag means the flipped
-`service.json` is not visible on `replydeskhq.tech/app/` immediately.
+`service.json` is not visible on `replydeskhq.tech/` immediately.
 
 1. `tools/run_tunnel.ps1` (or `tools/run_tunnel.sh` in git-bash). It:
    - downloads the cloudflared binary once if missing (anonymous),
@@ -17,13 +17,13 @@ The Pages rebuild plus ~10 minutes of edge cache lag means the flipped
      unless the port already answers,
    - starts the quick tunnel (`cloudflared tunnel --url http://127.0.0.1:8010
      --no-autoupdate`, log `out/tunnel.log`),
-   - writes `docs/app/service.json` = `{"status": "live", "url": "<tunnel URL>"}`
+   - writes `docs/service.json` = `{"status": "live", "url": "<tunnel URL>"}`
      and prints the URL.
    - Any failure (download blocked, no URL within ~60 s): writes
      `{"status": "unavailable", "url": null}` and exits non-zero.
 2. Builder commits the flipped `service.json`; orchestrator pushes.
 3. Wait out the Pages rebuild + edge cache (≥ 15 minutes total from push).
-4. Verify: open `replydeskhq.tech/app/`, confirm live drafting works (a draft
+4. Verify: open `replydeskhq.tech/`, confirm live drafting works (a draft
    run returns MODEL-mode replies, not the offline template note).
 
 ## During the session

@@ -1,4 +1,4 @@
-"""T21e tests for the hosted draft flow in docs/app/app.js — node-driven.
+"""T21e tests for the hosted draft flow in docs/app.js — node-driven.
 
 Loads app.js behind a minimal DOM stub (same pattern as the other SPA tests)
 and exercises the pure `window.rdDraft` builders: live RunResult rendering,
@@ -14,8 +14,8 @@ import unittest
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-RD_JS = REPO / "docs" / "app" / "rd.js"
-APP_JS = REPO / "docs" / "app" / "app.js"
+RD_JS = REPO / "docs" / "rd.js"
+APP_JS = REPO / "docs" / "app.js"
 FALLBACK_LABEL = "[Template reply - edit before posting]"
 OFFLINE_NOTE = ("replydesk service offline — these are editable templates; "
                 "live model drafts connect when the service is up.")
@@ -299,7 +299,7 @@ class AppJsDraftTests(unittest.TestCase):
 
     def test_service_json_shape(self):
         import json
-        svc = json.loads((REPO / "docs" / "app" / "service.json")
+        svc = json.loads((REPO / "docs" / "service.json")
                          .read_text(encoding="utf-8"))
         self.assertEqual(set(svc), {"status", "url"})
         self.assertIn(svc["status"], {"live", "unavailable"})
@@ -307,7 +307,7 @@ class AppJsDraftTests(unittest.TestCase):
             else self.assertTrue(svc["url"].startswith("https://"))
 
     def test_index_html_has_draft_cards_container(self):
-        html = (REPO / "docs" / "app" / "index.html").read_text(
+        html = (REPO / "docs" / "index.html").read_text(
             encoding="utf-8")
         self.assertIn('id="draft-cards"', html)
 
