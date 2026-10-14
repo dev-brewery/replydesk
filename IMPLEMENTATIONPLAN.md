@@ -29,9 +29,14 @@ Only the builder commits.
 | T18 | Final offline + privacy audit | ⏳ Fri | |
 | T19 | Page-paste parser (Google/Yelp page copy or manual lines) | ✅ | 6d34f14, 9f5ea3c |
 | T20 | Self-explaining UI (page-paste flow + found-reviews preview) | ✅ | cfce68a |
+| T21a-e | Hosted SPA: parser port, signup/session, plan gate+workspace, ports, draft flow (+4 live fixes) | ✅ live | 1fa9131…8d5261c |
+| T22 | API bridge + parallel drafting (T22b/c) | ✅ live | cd07aaf, 0e954e5 |
+| T23 | Tunnel tooling + live run (service.json live) | ✅ live | 0993722, b209407 |
+| T24 | Hosted e2e verification | ✅ (screenshots pending) | orchestrator-driven |
+| T16 | Screenshots into `docs/` | ⏳ today | |
 | ARCH | `ARCHITECTURE.md` + `TASKS.md` produced (architect-1) | ✅ | rides T01 |
 
-**STATE:** Wed Oct 14 night. **Corrective product work done & pushed** (owner feedback: paste-per-review not payable): T19 page-paste parser (real Google shape captured live; U+E838 glyph defect found by verification and fixed) + T20 self-explaining UI (3-step header, no-account line, found-reviews preview). 163 tests green. Remote = local at 9f5ea3c. Thursday: morning full online dress-run with a real page-paste; evening first-user session (owner recruits). Friday: T16 screenshots, T18 audit, post, D10. Sat: publish 1 PM PDT target / 6 PM hard stop.
+**STATE:** Thu Oct 14 ~05:15. **THE HOSTED SIGN-UP PRODUCT IS LIVE at https://replydeskhq.tech/app/ and PROVEN END-TO-END in a real browser** (signup → founding-trial activation → page-paste → preview → live verified GLM-5.3-Flash drafts via accountless tunnel). 230 tests green; remote = local (8d5261c); bridge + tunnel running. Today: T24/T16 screenshots, T18 audit, post rewrite, D10; evening: first user (owner recruits). Publish: Sat 1 PM PDT target / 6 PM hard stop.
 
 ---
 
