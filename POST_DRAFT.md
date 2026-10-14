@@ -21,7 +21,7 @@ editor at publish time.
 
 <!-- Deployed link + screenshots. -->
 
-**Live demo:** https://replydeskhq.tech/ (fallback while DNS propagates: https://dev-brewery.github.io/replydesk/)
+**Live demo:** https://replydeskhq.tech/ (fallback: https://dev-brewery.github.io/replydesk/)
 
 ![replydesk demo](https://raw.githubusercontent.com/dev-brewery/replydesk/main/docs/demo.png)
 
