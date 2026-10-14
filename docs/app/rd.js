@@ -137,5 +137,139 @@
     }
   }
 
-  global.rd = { parsePaste: parsePaste, parseReviews: parseReviews };
+  // --- auth helpers (T21b, ARCHITECTURE §11) -------------------------------
+  // Browser-local accounts are convenience, not a security boundary. PBKDF2
+  // params: SHA-256, 100 000 iterations, 16-byte random salt, 32-byte key.
+  var PBKDF2_ITERATIONS = 100000;
+  var ACCOUNTS_KEY = 'rd_accounts';
+  var SESSION_KEY = 'rd_session';
+  var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  function toHex(bytes) {
+    var out = '';
+    var view = new Uint8Array(bytes);
+    for (var i = 0; i < view.length; i++) {
+      out += ('0' + view[i].toString(16)).slice(-2);
+    }
+    return out;
+  }
+
+  function hexToBytes(hex) {
+    var out = new Uint8Array(hex.length / 2);
+    for (var i = 0; i < out.length; i++) {
+      out[i] = parseInt(hex.substr(i * 2, 2), 16);
+    }
+    return out;
+  }
+
+  function randomSaltHex() {
+    var b = new Uint8Array(16);
+    globalThis.crypto.getRandomValues(b);
+    return toHex(b);
+  }
+
+  function hashPassword(password, saltHex) {
+    var enc = new TextEncoder();
+    return globalThis.crypto.subtle
+      .importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveBits'])
+      .then(function (key) {
+        return globalThis.crypto.subtle.deriveBits(
+          { name: 'PBKDF2', hash: 'SHA-256',
+            salt: hexToBytes(saltHex), iterations: PBKDF2_ITERATIONS },
+          key, 256);
+      })
+      .then(toHex);
+  }
+
+  function equalHex(a, b) {
+    if (typeof a !== 'string' || typeof b !== 'string') return false;
+    if (a.length !== b.length) return false;
+    var diff = 0;
+    for (var i = 0; i < a.length; i++) {
+      diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+    }
+    return diff === 0;
+  }
+
+  function loadAccounts(storage) {
+    try {
+      return JSON.parse(storage.getItem(ACCOUNTS_KEY) || '{}');
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function saveAccounts(storage, accounts) {
+    storage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
+  }
+
+  function createAccount(storage, opts) {
+    var name = (opts.name || '').trim();
+    var email = (opts.email || '').trim().toLowerCase();
+    var password = opts.password || '';
+    if (!name) {
+      return Promise.resolve({ ok: false, error: 'Please enter your name.' });
+    }
+    if (!EMAIL_RE.test(email)) {
+      return Promise.resolve({ ok: false,
+        error: 'Please enter a valid email address.' });
+    }
+    if (password.length < 8) {
+      return Promise.resolve({ ok: false,
+        error: 'Password must be at least 8 characters.' });
+    }
+    var accounts = loadAccounts(storage);
+    if (Object.prototype.hasOwnProperty.call(accounts, email)) {
+      return Promise.resolve({ ok: false,
+        error: 'An account with that email already exists.' });
+    }
+    var salt = randomSaltHex();
+    return hashPassword(password, salt).then(function (hash) {
+      accounts[email] = { name: name, salt: salt, hash: hash };
+      saveAccounts(storage, accounts);
+      storage.setItem(SESSION_KEY, email);
+      return { ok: true, email: email, name: name };
+    });
+  }
+
+  function login(storage, opts) {
+    var email = (opts.email || '').trim().toLowerCase();
+    var password = opts.password || '';
+    var acct = loadAccounts(storage)[email];
+    // One generic failure message for unknown email and wrong password alike.
+    if (!acct) {
+      return Promise.resolve({ ok: false,
+        error: 'Wrong email or password.' });
+    }
+    return hashPassword(password, acct.salt).then(function (hash) {
+      if (!equalHex(hash, acct.hash)) {
+        return { ok: false, error: 'Wrong email or password.' };
+      }
+      storage.setItem(SESSION_KEY, email);
+      return { ok: true, email: email, name: acct.name };
+    });
+  }
+
+  function logout(storage) {
+    storage.removeItem(SESSION_KEY); // clears the session flag only
+  }
+
+  function sessionEmail(storage) {
+    return storage.getItem(SESSION_KEY);
+  }
+
+  global.rd = {
+    parsePaste: parsePaste,
+    parseReviews: parseReviews,
+    hashPassword: hashPassword,
+    randomSaltHex: randomSaltHex,
+    equalHex: equalHex,
+    createAccount: createAccount,
+    login: login,
+    logout: logout,
+    sessionEmail: sessionEmail,
+    PBKDF2_ITERATIONS: PBKDF2_ITERATIONS,
+    ACCOUNTS_KEY: ACCOUNTS_KEY,
+    SESSION_KEY: SESSION_KEY
+  };
 })(typeof window !== 'undefined' ? window : globalThis);

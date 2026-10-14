@@ -28,6 +28,16 @@ from replydesk.render import render_run  # noqa: E402
 
 _DEMO_TITLE = "replydesk — demo run"
 
+# T21b: top nav injected into the generated landing page — links to the
+# recorded demo (itself, at /) and to the hosted SPA. Deterministic: inserted
+# at a fixed point, same bytes every run. The recorded demo page itself is
+# render_run output; this wrapper is the only place the nav is added.
+_NAV_HTML = (
+    '<nav class="topnav">replydesk &mdash; '
+    '<a href="/">recorded demo</a> '
+    '<a href="/app/">Open the app &rarr; sign up</a></nav>'
+)
+
 
 def demo_run_json(run) -> str:
     """Serialize a demo RunResult deterministically (pinned date, sorted keys).
@@ -57,9 +67,13 @@ def build_demo(out_dir) -> tuple[Path, Path]:
         )
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
+    html = render_run(run, title=_DEMO_TITLE, demo=True)
+    if "</head><body>" not in html:  # defensive: render_run contract change
+        raise RuntimeError("render_run output missing '</head><body>' anchor")
+    html = html.replace("</head><body>", "</head><body>" + _NAV_HTML, 1)
     html_path = out / "index.html"
     json_path = out / "demo_run.json"
-    html_path.write_bytes(render_run(run, title=_DEMO_TITLE, demo=True).encode("utf-8"))
+    html_path.write_bytes(html.encode("utf-8"))
     json_path.write_bytes(demo_run_json(run).encode("utf-8"))
     return html_path, json_path
 

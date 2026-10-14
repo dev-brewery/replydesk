@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>replydesk — review replies in your own voice</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    margin: 0; color: #1f2933; background: #f7f9fb; line-height: 1.5;
+  }
+  header {
+    background: #10365c; color: #fff; padding: 1.5rem 1rem; text-align: center;
+  }
+  header h1 { margin: 0 0 .25rem; font-size: 1.6rem; }
+  header p { margin: 0; color: #cfe0f2; }
+  main { max-width: 34rem; margin: 0 auto; padding: 1.5rem 1rem; }
+  .steps { display: flex; gap: 1rem; margin-bottom: 1.5rem; }
+  .steps div { flex: 1; background: #fff; border: 1px solid #dde3ea;
+    border-radius: 8px; padding: .75rem; font-size: .85rem; }
+  .steps strong { display: block; color: #10365c; }
+  .pricing {
+    text-align: center; background: #eef6ee; border: 1px solid #cbe3cb;
+    border-radius: 8px; padding: .6rem; margin-bottom: 1.5rem; font-size: .9rem;
+  }
+  .card {
+    background: #fff; border: 1px solid #dde3ea; border-radius: 8px;
+    padding: 1.25rem; margin-bottom: 1.25rem;
+  }
+  .card h2 { margin-top: 0; font-size: 1.1rem; color: #10365c; }
+  label { display: block; font-size: .85rem; margin: .6rem 0 .15rem; }
+  input {
+    width: 100%; padding: .5rem; border: 1px solid #b9c4cf;
+    border-radius: 6px; font-size: 1rem;
+  }
+  button {
+    margin-top: .9rem; background: #10365c; border: 0; color: #fff;
+    padding: .55rem 1.2rem; border-radius: 6px; font-size: 1rem; cursor: pointer;
+  }
+  button.secondary { background: #5b7083; }
+  .error { color: #b3261e; font-size: .85rem; min-height: 1.2em; margin-top: .4rem; }
+  .honest { font-size: .8rem; color: #52606d; margin-top: .75rem; }
+  .hidden { display: none; }
+  footer { text-align: center; color: #7b8794; font-size: .8rem; padding: 1rem; }
+</style>
+</head>
+<body>
+<header>
+  <h1>replydesk</h1>
+  <p>review replies in your own voice</p>
+</header>
+<main>
+  <div class="steps">
+    <div><strong>1. Paste</strong> your reviews from Google or Yelp.</div>
+    <div><strong>2. Triage</strong> sorts praise, problems and questions.</div>
+    <div><strong>3. Reply</strong> with drafts in your own tone, then copy them.</div>
+  </div>
+  <div class="pricing">No card needed. Founding plan: $9/month, first month free,
+    invoiced later.</div>
+
+  <div id="auth-view">
+    <div class="card">
+      <h2>Sign up</h2>
+      <form id="signup-form">
+        <label for="su-name">Name</label>
+        <input id="su-name" name="name" type="text" autocomplete="name">
+        <label for="su-email">Email</label>
+        <input id="su-email" name="email" type="email" autocomplete="email">
+        <label for="su-password">Password (at least 8 characters)</label>
+        <input id="su-password" name="password" type="password"
+          autocomplete="new-password">
+        <div class="error" id="signup-error" role="alert"></div>
+        <button type="submit">Sign up</button>
+      </form>
+      <p class="honest">Your account lives in this browser for now — we'll move it to the service at launch.</p>
+    </div>
+    <div class="card">
+      <h2>Log in</h2>
+      <form id="login-form">
+        <label for="li-email">Email</label>
+        <input id="li-email" name="email" type="email" autocomplete="email">
+        <label for="li-password">Password</label>
+        <input id="li-password" name="password" type="password"
+          autocomplete="current-password">
+        <div class="error" id="login-error" role="alert"></div>
+        <button type="submit">Log in</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="workspace-view" class="hidden">
+    <div class="card">
+      <h2 id="workspace-greeting">Your workspace</h2>
+      <p>Your workspace &mdash; review paste arrives in the next build step.</p>
+      <button type="button" class="secondary" id="logout-button">Log out</button>
+    </div>
+  </div>
+</main>
+<footer>replydesk &mdash; founding-plan preview</footer>
+<script src="rd.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
