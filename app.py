@@ -312,11 +312,34 @@ def main(argv=None) -> None:
                         help="serve the committed demo fixture run read-only")
     parser.add_argument("--online", action="store_true",
                         help="draft via the configured LLM (reads .env)")
+    parser.add_argument("--serve-api", action="store_true",
+                        help="serve the /api/draft JSON bridge (implies online; "
+                             "starts even if the client cannot be built, "
+                             "answering 503)")
     parser.add_argument("--port", type=int, default=DEFAULT_PORT)
     parser.add_argument("--host", default=DEFAULT_HOST)
     parser.add_argument("--env", default=".env",
                         help="path to the .env file (online mode only)")
     args = parser.parse_args(argv)
+
+    if args.serve_api:
+        from replydesk.api import make_api_server
+
+        client, degraded = online_client(args.env)
+        if degraded is None:
+            print("api mode: /api/draft drafting via the configured endpoint")
+        else:
+            print(f"api mode: online client unavailable ({degraded}); "
+                  "every /api/draft will answer 503")
+        httpd = make_api_server(args.host, args.port, client)
+        print(f"replydesk api listening on http://{args.host}:{args.port}/")
+        try:
+            httpd.serve_forever()
+        except KeyboardInterrupt:
+            pass
+        finally:
+            httpd.server_close()
+        return
 
     note_text = ""
     if args.online:

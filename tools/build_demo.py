@@ -22,6 +22,7 @@ _REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
+from replydesk import api
 from replydesk.fixtures import FIXTURE_DATE, demo_run  # noqa: E402
 from replydesk.render import render_run  # noqa: E402
 
@@ -29,28 +30,16 @@ _DEMO_TITLE = "replydesk — demo run"
 
 
 def demo_run_json(run) -> str:
-    """Serialize a demo RunResult deterministically (pinned date, sorted keys)."""
-    payload = {
-        "generated_on": run.generated_on.isoformat(),
-        "profile": {"name": run.profile.name, "kind": run.profile.kind, "city": run.profile.city},
-        "decisions": [
-            {
-                "review_id": d.review.review_id,
-                "stars": d.review.stars,
-                "category": d.category.value,
-                "reason": d.reason,
-            }
-            for d in run.decisions
-        ],
-        "drafts": [
-            {
-                "review_id": d.review_id,
-                "source": d.source.value,
-                "verified": d.verified,
-                "text": d.text,
-            }
-            for d in run.drafts
-        ],
+    """Serialize a demo RunResult deterministically (pinned date, sorted keys).
+
+    Thin wrapper over ``replydesk.api.runresult_json`` plus the demo-only
+    ``profile`` block, so the committed ``docs/`` output stays byte-identical.
+    """
+    payload = json.loads(api.runresult_json(run))
+    payload["profile"] = {
+        "name": run.profile.name,
+        "kind": run.profile.kind,
+        "city": run.profile.city,
     }
     return json.dumps(payload, ensure_ascii=True, sort_keys=True, indent=2) + "\n"
 
