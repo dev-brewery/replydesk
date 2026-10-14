@@ -179,9 +179,9 @@ class OnlineRunTests(unittest.TestCase):
         assist_bodies = [b for b in keys if "triage customer reviews"
                          in b["messages"][0]["content"]]
         self.assertEqual(len(assist_bodies), 1)
-        self.assertEqual(assist_bodies[0]["max_tokens"], 100)
+        self.assertEqual(assist_bodies[0]["max_tokens"], 512)
         draft_bodies = [b for b in keys if b not in assist_bodies]
-        self.assertEqual([b["max_tokens"] for b in draft_bodies], [400])
+        self.assertEqual([b["max_tokens"] for b in draft_bodies], [800])
         self.assertEqual(
             [b["model"] for b in keys], [FAKE_MODEL] * len(keys)
         )

@@ -292,6 +292,16 @@ Default model: **GLM-5.3-Flash** via any OpenAI-compatible endpoint (§10 item 3
 Call policy everywhere: explicit `max_tokens`, temperature 0.3, timeout 300 s, up to 3
 transport attempts, `thinking=low` via `extra_body` where the endpoint supports it.
 `FixtureLLM` ignores policy knobs — same interface, zero network.
+Token budgets (amended 2026-10-14 from live-smoke data, glm-5.3-flash thinking=low
+via the owner's endpoint): the reasoning pass consumes ~70–400 completion tokens
+before any reply text, so a draft budget of 400 starved the reply
+(`finish_reason=length`, empty `content`) while **800** stops clean (~200-token
+completion → verified 40–120-word reply); the assist budget of 100 starved
+identically while **512** stops clean — hence draft/retry `max_tokens=800`,
+assist `max_tokens=512`. Aligned with this, an empty `content` in an
+otherwise-OK response is treated as a retryable failure by `HttpLLM` (raises
+`LLMError`; landed with T14's fix) and the verifier rejects empty drafts — no
+pipeline path can emit an empty reply.
 
 **Draft prompt (the core one).**
 - *System:* "You ghostwrite review replies as the owner of {profile.name}, a
@@ -304,16 +314,16 @@ transport attempts, `thinking=low` via `extra_body` where the endpoint supports 
 - *User:* triage category with guidance — thank-you: "warm thanks, echo one specific
   detail from the review"; fix-it: "name the problem, own it, no excuses, offer only
   next steps the facts allow" — then "Rating: {stars}/5" and the review text verbatim.
-  `key=review.review_id`, `max_tokens=400`.
+  `key=review.review_id`, `max_tokens=800`.
 - *Retry:* identical, plus the verifier violations: "Your previous draft contained
-  unverified claims: {violations}. Rewrite without them." `max_tokens=400`.
+  unverified claims: {violations}. Rewrite without them." `max_tokens=800`.
 
 **Triage-assist prompt (core — owner ruling D5-B, 2026-10-13).** The deterministic
 table of §4 always runs first, in full. The assist is consulted exactly when the
 table falls through to star rating into THANK_YOU (group 6: ≥4 stars, no pattern
 matched — the only reachable THANK_YOU), once per such review, via the same
 `LLMClient` as drafting: `complete(TRIAGE_ASSIST_SYSTEM, review.text,
-key="assist:"+review_id, max_tokens=100)`. *System:* classifier into thank-you/fix-it
+key="assist:"+review_id, max_tokens=512)`. *System:* classifier into thank-you/fix-it
 only — needs-a-human is not in its vocabulary; the deterministic table is the
 escalation authority. *User:* the review text verbatim. Output contract: one line,
 `category|one-line reason`, category ∈ {thank-you, fix-it}.
@@ -447,7 +457,7 @@ come from this page and the app UI via `tools/screenshot.sh` only (binary-safe; 
 | Verifier false positives annoy the owner | Violations are shown in the UI, one retry with feedback, then a clearly labeled editable template — never a dead end. |
 | Week-1 failure modes (image corruption, location leaks, weekday drift) | Kit rules already in force: binary via `cp`/`screenshot.sh`, `.gitattributes` binary attrs, pre-commit privacy guard (never bypassed), calendar pre-verified in §8. |
 | Custom-domain DNS misses publish (§10 Q4) | Post links the github.io URL as fallback; domain swap is a one-line edit + re-push. |
-| Core triage-assist adds one LLM call per thank-you review (latency, failure surface) | Single call, `max_tokens=100`, no assist-level retry; malformed output / error / fixture miss → deterministic result stands; offline and demo never consult the network (§5, §7). |
+| Core triage-assist adds one LLM call per thank-you review (latency, failure surface) | Single call, `max_tokens=512`, no assist-level retry; malformed output / error / fixture miss → deterministic result stands; offline and demo never consult the network (§5, §7). |
 
 ## 10. Pending owner determinations wired into this design
 

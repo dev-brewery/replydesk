@@ -262,3 +262,24 @@ Unblocked meanwhile: T02→T10 offline cadence proceeds regardless of any ruling
 ## 2026-10-13 (Tue, ~18:10) — D8 RULED: A — apex A records set
 
 - Owner ruled Option A and set the records. Orchestrator verified via local resolver: `replydeskhq.tech` resolves to all four GitHub Pages IPs (185.199.108–111.153); no `www` CNAME (optional, not required for A8). Registrar work complete; everything else is the project's side — T17 briefed and launched (docs/CNAME, push, Pages custom-domain via API, HTTPS verification, POST_DRAFT fallback note once solid).
+
+## 2026-10-13 (Tue, evening) — T17: two builder timeouts, diagnosis, near-complete
+
+- builder-T17 timed out at 600 s after committing `cdd4c30` (CNAME + riding docs) but before pushing. Per protocol, a short finish-brief followed (no redo).
+- builder-T17finish also timed out — but post-mortem shows it accomplished: push of `cdd4c30` ✓, custom domain set via Pages API (`cname: replydeskhq.tech`, status `built`) ✓, POST_DRAFT update committed as `ffb5cc3` — **not pushed** (remote still at cdd4c30).
+- Orchestrator diagnosis (read-only): git credential chain = global `manager` (GCM, can block on interactive GUI auth) + `gh auth setup-git` per-URL helper that returns no credential in this environment (verified: helper yields no password line). Non-interactive sub-agents can hang indefinitely on prompts that a human session would answer. Third, minimal brief issued with a prompt-proof inline credential helper (env-token only, nothing in argv) and hard 30 s per-command caps.
+- Open after that: enforce HTTPS (cert may still be provisioning — honest reporting either way) and final verification of https://replydeskhq.tech/.
+
+## 2026-10-13 (Tue, night) — T17 accepted: demo live at replydeskhq.tech (A8 done)
+
+- builder-T17push completed the minimal remainder exactly per brief: `ffb5cc3` pushed (inline env-credential helper — no prompt possible), Pages API already showed `https_enforced: true`, apex returned 200; no extra actions.
+- Orchestrator final verification: `https://replydeskhq.tech/` → HTTP 200 serving the Ridgeline fixture run over HTTPS; Pages API `{cname: replydeskhq.tech, status: built, https_enforced: true}`; remote head == local head (`ffb5cc3`, 14 commits); `POST_DRAFT.md` Demo section links the domain primary with the github.io fallback.
+- **A8 fully satisfied two days early.** Timeouts post-mortem (3 sessions, honest record): two 600 s hangs on interactive credential prompts in headless sub-agents; resolved with a prompt-proof inline helper; lesson journaled — future remote briefs carry the inline-credential pattern from the start.
+- Remaining before Thursday: T14 (online wiring — mocked), T14a remainder (assist unit tests), T18 (audit tooling). T15 (real-run canned refresh) runs Thursday once the endpoint is in active use.
+
+## 2026-10-14 (Wed, 09:01) — date correction owned; Wednesday re-baseline
+
+- The orchestrator's STATE lines read "Tue Oct 13 night" through this morning — wrong: the session crossed midnight and T17's final push landed 08:37 Wed. Cause: anchoring on an early `date` check without re-checking after long-running sessions. Owned plainly; calendar anchors re-verified against the machine clock now.
+- **Re-baseline for the week:** Wed Oct 14 (today) = T14 online path + real-app online smoke + T14a remainder + T15 dress rehearsal (real-run canned refresh) + owner recruits the first user. Thu Oct 15 = buffer + first-user session in the evening (preconditions: online smoke green, app runnable, observations logged as they happen). Fri Oct 16 = T16 screenshots, T18 audit, post complete, D10 DEV-login check. Sat Oct 17 = publish, 1 PM PDT target / 6 PM hard stop (D2-B).
+- Schedule risk flagged by the owner: the first user is not yet recruited. The person is the owner's to pick; the orchestrator's job is to make everything else ready so the person is the only missing piece, and to supply a forwardable invitation blurb (delivered in chat, not the repo).
+- T14 launched immediately (critical path for Thursday).

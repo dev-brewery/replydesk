@@ -80,9 +80,9 @@ class TestRun(unittest.TestCase):
         self.assertEqual(draft.verifier_notes, ())
         self.assertEqual(draft.text, GOOD_THANKS)
         self.assertEqual(result.generated_on, TODAY)
-        self.assertEqual(client.calls[0]["max_tokens"], 100)  # assist consult first
+        self.assertEqual(client.calls[0]["max_tokens"], 512)  # assist consult first
         self.assertEqual(client.calls[0]["key"], "assist:r-good")
-        self.assertEqual(client.calls[1]["max_tokens"], 400)
+        self.assertEqual(client.calls[1]["max_tokens"], 800)
         self.assertEqual(client.calls[1]["key"], "r-good")
 
     def test_bad_then_good_retry(self):
@@ -94,7 +94,7 @@ class TestRun(unittest.TestCase):
         # Retry prompt quotes the violations back.
         self.assertIn("unverified claims", client.calls[1]["user"])
         self.assertIn("30%", client.calls[1]["user"])
-        self.assertEqual(client.calls[1]["max_tokens"], 400)
+        self.assertEqual(client.calls[1]["max_tokens"], 800)
 
     def test_bad_twice_gets_labeled_template(self):
         client = StubClient({"r-bad": [BAD_DRAFT, ALSO_BAD]})

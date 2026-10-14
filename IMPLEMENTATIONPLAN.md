@@ -25,11 +25,11 @@ Only the builder commits.
 | T14a | Triage assist (core, D5-B): consult landed in T11; remainder = dedicated unit tests | ⏳ | 206a9a1 (partial) |
 | T15 | Refresh canned drafts — endpoint RULED (D3-A z.ai); runs once the owner's key sits in `.env` | ⏳ | |
 | T16 | Screenshots into `docs/` | ⏳ | |
-| T17 | Custom domain replydeskhq.tech — **blocked: owner Q4 (DNS)** | 🔒 | |
+| T17 | Custom domain replydeskhq.tech — D8-A ruled, records set by owner | ✅ live | cdd4c30, ffb5cc3 |
 | T18 | Final offline + privacy audit | ⏳ | |
 | ARCH | `ARCHITECTURE.md` + `TASKS.md` produced (architect-1) | ✅ | rides T01 |
 
-**STATE:** Tue Oct 13 ~18:00. **WEDNESDAY GATE MET EARLY:** repo public + pushed (12 commits, first 678e93a in-window), Pages built from /docs, live demo serving the Ridgeline run at dev-brewery.github.io/replydesk. LLM endpoint smoke-verified (thinking-mode trap confirmed + handled). T01–T13 ✅. Remaining lane: T14, T14a-remainder, T16, T17 (awaits D8), T18, T15 (Thu). Open decision: D8 DNS (presented). Queued: D10 (Fri), D6 (if slipped — none have).
+**STATE:** Tue Oct 13 night. **A8 DONE:** demo live at https://replydeskhq.tech/ (HTTPS enforced, Pages built, POST_DRAFT links it primary; github.io fallback). Repo public, 14 commits pushed, first in-window. Remaining lane: T14 (online wiring) → T14a-remainder → T18 (audit) → T16 (screenshots, Fri) → T15 (real-run refresh, Thu after key use begins). D10 (DEV login check) Friday; D6 dormant (no gates slipped). Publish: Sat Oct 17, 1 PM PDT target / 6 PM hard stop.
 
 ---
 

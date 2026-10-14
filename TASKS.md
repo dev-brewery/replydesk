@@ -223,7 +223,8 @@ parallel-safe with render/app work.
   constant plus assist wiring inside `draft.run()` immediately after `triage_all`
   (no signature change). Consulted once per deterministic THANK_YOU decision (the
   star-rating fall-through) through the same client: `key="assist:"+review_id`,
-  `max_tokens=100`, output contract `category|one-line reason`. A well-formed
+  `max_tokens=512` (budgets amended 2026-10-14; ARCHITECTURE §5), output contract
+  `category|one-line reason`. A well-formed
   `fix-it` flips the decision to FIX_IT with a reason naming the assist and the
   model's one-line reason (a flipped review then drafts with fix-it guidance);
   malformed/empty output, a `needs-a-human` token, an `LLMError`, or a fixture

@@ -73,7 +73,7 @@ def _consult_assist(client, decisions: list[TriageDecision]) -> list[TriageDecis
                 TRIAGE_ASSIST_SYSTEM,
                 decision.review.text,
                 key=f"assist:{decision.review.review_id}",
-                max_tokens=100,
+                max_tokens=512,
             )
         except LLMError:
             adjusted.append(decision)
@@ -173,7 +173,7 @@ def run(
         review = decision.review
         try:
             text = client.complete(
-                system, _user_prompt(decision), key=review.review_id, max_tokens=400
+                system, _user_prompt(decision), key=review.review_id, max_tokens=800
             )
         except LLMError as exc:
             drafts.append(_fallback(
@@ -198,7 +198,7 @@ def run(
                 system,
                 _user_prompt(decision, retry_violations=verification.violations),
                 key=review.review_id,
-                max_tokens=400,
+                max_tokens=800,
             )
         except LLMError as exc:
             drafts.append(_fallback(
