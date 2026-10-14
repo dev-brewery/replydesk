@@ -212,13 +212,19 @@
       profile: defaultProfile(deps.profile),
       reviews: parsed.reviews
     });
-    // Generous client timeout: model drafting can take a while; no explicit
-    // abort — the server side owns the deadline.
+    // T22b: client-side deadline. Real model calls ran 42-70+ s tonight;
+    // give them 240 s, then fall back to the offline template path below.
+    var controller = typeof AbortController === 'function'
+      ? new AbortController() : null;
+    var timer = controller
+      ? setTimeout(function () { controller.abort(); }, 240000) : null;
     return deps.fetch(svc.url + '/api/draft', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: body
+      body: body,
+      signal: controller ? controller.signal : undefined
     }).then(function (res) {
+      if (timer) clearTimeout(timer);
       if (!res.ok) throw new Error('HTTP ' + res.status);
       return res.json();
     }).then(function (run) {

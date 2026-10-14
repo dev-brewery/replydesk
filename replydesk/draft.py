@@ -7,6 +7,7 @@ safe: the only network touch is the injected client.
 """
 
 from collections.abc import Iterable
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date
 
 from .llm import LLMError
@@ -158,6 +159,73 @@ def _fallback(
     )
 
 
+def _draft_one(
+    decision: TriageDecision,
+    system: str,
+    profile: BusinessProfile,
+    client,
+    tone_guide: ToneGuide,
+) -> DraftResult:
+    """Draft+verify+retry+fallback for a single review. Self-contained and
+    stateless apart from the client, so it is safe to run concurrently.
+    """
+    review = decision.review
+    try:
+        text = client.complete(
+            system, _user_prompt(decision), key=review.review_id, max_tokens=800
+        )
+    except LLMError as exc:
+        return _fallback(
+            decision, profile, notes=(f"model unreachable: {exc}",)
+        )
+    verification = verify_draft(
+        text, tone_guide=tone_guide, review=review, profile=profile
+    )
+    if verification.passed:
+        return DraftResult(
+            review_id=review.review_id,
+            text=text,
+            source=DraftSource.MODEL,
+            verified=True,
+            verifier_notes=(),
+        )
+    # One retry, with the violations quoted back into the prompt.
+    try:
+        retry_text = client.complete(
+            system,
+            _user_prompt(decision, retry_violations=verification.violations),
+            key=review.review_id,
+            max_tokens=800,
+        )
+    except LLMError as exc:
+        return _fallback(
+            decision,
+            profile,
+            notes=(
+                "verification failed: " + "; ".join(verification.violations),
+                f"model unreachable on retry: {exc}",
+            ),
+        )
+    retry_verification = verify_draft(
+        retry_text, tone_guide=tone_guide, review=review, profile=profile
+    )
+    if retry_verification.passed:
+        return DraftResult(
+            review_id=review.review_id,
+            text=retry_text,
+            source=DraftSource.MODEL_RETRY,
+            verified=True,
+            verifier_notes=(),
+        )
+    return _fallback(
+        decision,
+        profile,
+        notes=(
+            "verification failed: " + "; ".join(retry_verification.violations),
+        ),
+    )
+
+
 def run(
     tone_guide: ToneGuide,
     profile: BusinessProfile,
@@ -166,72 +234,27 @@ def run(
     *,
     today: date,
 ) -> RunResult:
-    """Triage, then draft with verify -> one retry -> labeled fallback."""
+    """Triage, then draft with verify -> one retry -> labeled fallback.
+
+    Per-review drafting runs in a small thread pool (T22b); results are
+    collected in original review order, so output is deterministic. The
+    triage assist consult stays sequential before dispatch: it decides the
+    guidance every prompt below depends on.
+    """
     decisions = _consult_assist(client, triage_all(reviews))
     system = _system_prompt(tone_guide, profile)
-    drafts: list[DraftResult] = []
-
-    for decision in decisions:
-        if decision.category is TriageCategory.NEEDS_HUMAN:
-            continue  # A3: no draft for needs-a-human reviews
-        review = decision.review
-        try:
-            text = client.complete(
-                system, _user_prompt(decision), key=review.review_id, max_tokens=800
-            )
-        except LLMError as exc:
-            drafts.append(_fallback(
-                decision, profile, notes=(f"model unreachable: {exc}",)
-            ))
-            continue
-        verification = verify_draft(
-            text, tone_guide=tone_guide, review=review, profile=profile
-        )
-        if verification.passed:
-            drafts.append(DraftResult(
-                review_id=review.review_id,
-                text=text,
-                source=DraftSource.MODEL,
-                verified=True,
-                verifier_notes=(),
-            ))
-            continue
-        # One retry, with the violations quoted back into the prompt.
-        try:
-            retry_text = client.complete(
-                system,
-                _user_prompt(decision, retry_violations=verification.violations),
-                key=review.review_id,
-                max_tokens=800,
-            )
-        except LLMError as exc:
-            drafts.append(_fallback(
-                decision, profile,
-                notes=(
-                    "verification failed: " + "; ".join(verification.violations),
-                    f"model unreachable on retry: {exc}",
-                ),
-            ))
-            continue
-        retry_verification = verify_draft(
-            retry_text, tone_guide=tone_guide, review=review, profile=profile
-        )
-        if retry_verification.passed:
-            drafts.append(DraftResult(
-                review_id=review.review_id,
-                text=retry_text,
-                source=DraftSource.MODEL_RETRY,
-                verified=True,
-                verifier_notes=(),
-            ))
-        else:
-            drafts.append(_fallback(
-                decision,
-                profile,
-                notes=(
-                    "verification failed: " + "; ".join(retry_verification.violations),
-                ),
-            ))
+    draftable = [
+        d for d in decisions if d.category is not TriageCategory.NEEDS_HUMAN
+    ]
+    if draftable:
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            futures = [
+                pool.submit(_draft_one, d, system, profile, client, tone_guide)
+                for d in draftable
+            ]
+            drafts = [f.result() for f in futures]
+    else:
+        drafts = []
 
     return RunResult(
         profile=profile,

@@ -3,6 +3,7 @@
 Offline only: stub clients and FixtureLLM, no network.
 """
 
+import time
 import unittest
 from datetime import date
 
@@ -151,6 +152,78 @@ class TestRun(unittest.TestCase):
         # FixtureLLM returns the same canned draft twice; bad twice -> template
         self.assertEqual(by_id["r-bad"].source, DraftSource.TEMPLATE)
         self.assertTrue(by_id["r-bad"].text.startswith(FALLBACK_LABEL))
+
+
+class SlowClient:
+    """Thread-safe stub: ~0.2 s per complete() call, one clean reply per key.
+    For T22b wall-time test only.
+    """
+
+    def __init__(self, replies, delay=0.2):
+        import threading
+        self._lock = threading.Lock()
+        self._replies = dict(replies)
+        self._delay = delay
+        self.calls = []
+
+    def complete(self, system, user, *, key, max_tokens):
+        with self._lock:
+            self.calls.append(key)
+            reply = self._replies.get(key)
+        import time
+        time.sleep(self._delay)
+        if reply is None:
+            raise LLMError("slow stub exhausted")
+        return reply
+
+
+class TestParallelRun(unittest.TestCase):
+    """T22b: per-review drafting runs in a bounded thread pool."""
+
+    def _four_reviews(self):
+        # FIX_IT reviews: the triage assist makes no calls for them, so the
+        # wall time isolates the four draft calls.
+        return [
+            Review(review_id=f"r-{i}", stars=1,
+                   text="The order was wrong and cold.")
+            for i in range(4)
+        ]
+
+    def test_parallel_is_parallel_and_order_stable(self):
+        reviews = self._four_reviews()
+        parallel_client = SlowClient({f"r-{i}": GOOD_THANKS for i in range(4)})
+        start = time.monotonic()
+        result = run(TONE, PROFILE, reviews, parallel_client, today=TODAY)
+        wall = time.monotonic() - start
+        self.assertLess(wall, 0.6, f"4x0.2s drafts took {wall:.2f}s - sequential?")
+        # Order must match original review order, not completion order.
+        self.assertEqual(
+            [d.review_id for d in result.drafts],
+            [f"r-{i}" for i in range(4)],
+        )
+        self.assertTrue(all(d.source is DraftSource.MODEL for d in result.drafts))
+
+    def test_sequential_equivalence(self):
+        """Same inputs via a 1-worker-equivalent slow path give identical
+        drafts: parallelism must not change results, only wall time."""
+        reviews = self._four_reviews()
+        a = run(TONE, PROFILE, reviews,
+                SlowClient({f"r-{i}": GOOD_THANKS for i in range(4)}),
+                today=TODAY)
+        b = run(TONE, PROFILE, reviews,
+                SlowClient({f"r-{i}": GOOD_THANKS for i in range(4)}),
+                today=TODAY)
+        self.assertEqual(
+            [(d.review_id, d.text, d.source, d.verified) for d in a.drafts],
+            [(d.review_id, d.text, d.source, d.verified) for d in b.drafts],
+        )
+
+    def test_needs_human_stays_draftless_in_parallel(self):
+        reviews = [REVIEW_HUMAN] + self._four_reviews()
+        client = SlowClient({f"r-{i}": GOOD_THANKS for i in range(4)})
+        result = run(TONE, PROFILE, reviews, client, today=TODAY)
+        self.assertNotIn("r-human", [d.review_id for d in result.drafts])
+        self.assertEqual(len(result.drafts), 4)
 
 
 if __name__ == "__main__":
