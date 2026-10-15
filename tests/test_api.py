@@ -221,6 +221,23 @@ class ApiServerTest(unittest.TestCase):
         self.assertEqual(resp.status, 503)
         self.assertEqual(json.loads(data)["error"], "service unavailable")
 
+    def test_client_none_malformed_json_is_400(self):
+        # Degraded mode must still validate requests (A9: behavior is the
+        # same with or without a local .env).
+        httpd = make_api_server(_HOST, 0, None)
+        self.addCleanup(httpd.server_close)
+        self.addCleanup(httpd.shutdown)
+        port = httpd.server_address[1]
+        threading.Thread(target=httpd.serve_forever, daemon=True).start()
+        conn = http.client.HTTPConnection(_HOST, port, timeout=10)
+        conn.request("POST", "/api/draft", body="{not json",
+                     headers={"Content-Type": "application/json"})
+        resp = conn.getresponse()
+        data = resp.read()
+        conn.close()
+        self.assertEqual(resp.status, 400)
+        self.assertEqual(json.loads(data)["error"], "malformed JSON")
+
 
 if __name__ == "__main__":
     unittest.main()

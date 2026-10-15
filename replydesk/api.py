@@ -142,6 +142,37 @@ def _validate_reviews(raw) -> list[Review]:
     return reviews
 
 
+def _parse_request(body: bytes):
+    """Validate one /api/draft request body.
+
+    Returns ``(tone_guide, profile, reviews)`` or raises ``_RequestError``.
+    Pure request validation: independent of the model client, so a degraded
+    server can still answer 400 for malformed input (A9: behavior must not
+    depend on whether a local .env exists).
+    """
+    if len(body) > CAPS["MAX_BODY_BYTES"]:
+        raise _RequestError(HTTPStatus.REQUEST_ENTITY_TOO_LARGE,
+                            _caps_error("MAX_BODY_BYTES"))
+    try:
+        payload = json.loads(body.decode("utf-8"))
+    except (UnicodeDecodeError, ValueError):
+        raise _RequestError(HTTPStatus.BAD_REQUEST, "malformed JSON")
+    if not isinstance(payload, dict):
+        raise _RequestError(HTTPStatus.BAD_REQUEST, "body must be a JSON object")
+    tone_text = payload.get("tone")
+    if not isinstance(tone_text, str):
+        raise _RequestError(HTTPStatus.BAD_REQUEST, "tone must be a string")
+    if len(tone_text) > CAPS["MAX_TONE_CHARS"]:
+        raise _RequestError(HTTPStatus.BAD_REQUEST, _caps_error("MAX_TONE_CHARS"))
+    profile = _validate_profile(payload.get("profile"))
+    reviews = _validate_reviews(payload.get("reviews"))
+    try:
+        tone_guide = parse_tone_guide(tone_text)
+    except ToneGuideError:
+        raise _RequestError(HTTPStatus.BAD_REQUEST, "invalid tone guide")
+    return tone_guide, profile, reviews
+
+
 def handle_draft(client, body: bytes) -> tuple[HTTPStatus, str]:
     """Run the pipeline for one /api/draft request body.
 
@@ -149,26 +180,7 @@ def handle_draft(client, body: bytes) -> tuple[HTTPStatus, str]:
     failure becomes a 500 naming only the failure class.
     """
     try:
-        if len(body) > CAPS["MAX_BODY_BYTES"]:
-            raise _RequestError(HTTPStatus.REQUEST_ENTITY_TOO_LARGE,
-                                _caps_error("MAX_BODY_BYTES"))
-        try:
-            payload = json.loads(body.decode("utf-8"))
-        except (UnicodeDecodeError, ValueError):
-            raise _RequestError(HTTPStatus.BAD_REQUEST, "malformed JSON")
-        if not isinstance(payload, dict):
-            raise _RequestError(HTTPStatus.BAD_REQUEST, "body must be a JSON object")
-        tone_text = payload.get("tone")
-        if not isinstance(tone_text, str):
-            raise _RequestError(HTTPStatus.BAD_REQUEST, "tone must be a string")
-        if len(tone_text) > CAPS["MAX_TONE_CHARS"]:
-            raise _RequestError(HTTPStatus.BAD_REQUEST, _caps_error("MAX_TONE_CHARS"))
-        profile = _validate_profile(payload.get("profile"))
-        reviews = _validate_reviews(payload.get("reviews"))
-        try:
-            tone_guide = parse_tone_guide(tone_text)
-        except ToneGuideError:
-            raise _RequestError(HTTPStatus.BAD_REQUEST, "invalid tone guide")
+        tone_guide, profile, reviews = _parse_request(body)
         run = run_pipeline(tone_guide, profile, reviews, client,
                            today=profile_date())
         return HTTPStatus.OK, runresult_json(run)
@@ -238,12 +250,6 @@ class _ApiHandler(http.server.BaseHTTPRequestHandler):
             self._log(HTTPStatus.NOT_FOUND)
             return
         origin = self._cors_origin()
-        if self.client is None:
-            self._send_json(HTTPStatus.SERVICE_UNAVAILABLE,
-                            '{"error": "service unavailable"}\n',
-                            cors_origin=origin)
-            self._log(HTTPStatus.SERVICE_UNAVAILABLE)
-            return
         try:
             length = int(self.headers.get("Content-Length", "0"))
         except ValueError:
@@ -272,6 +278,22 @@ class _ApiHandler(http.server.BaseHTTPRequestHandler):
             self._log(HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
             return
         body = self.rfile.read(length)
+        if self.client is None:
+            # Degraded: request validation still applies (malformed input
+            # keeps its 400); only a draftable body gets the 503.
+            try:
+                _parse_request(body)
+            except _RequestError as exc:
+                self._send_json(exc.status,
+                                json.dumps({"error": exc.message}) + "\n",
+                                cors_origin=origin)
+                self._log(exc.status)
+                return
+            self._send_json(HTTPStatus.SERVICE_UNAVAILABLE,
+                            '{"error": "service unavailable"}\n',
+                            cors_origin=origin)
+            self._log(HTTPStatus.SERVICE_UNAVAILABLE)
+            return
         status, text = handle_draft(self.client, body)
         count = None
         if status == HTTPStatus.OK:
