@@ -333,6 +333,47 @@ Unblocked meanwhile: T02→T10 offline cadence proceeds regardless of any ruling
 - Deviations owned: one orchestrator-authored commit (b209407, service.json operational flip — trailer misattributed to the builder line, corrected in this entry: it was the orchestrator's); orchestrator executed the anonymous binary download + tunnel start (T23 execution, not code).
 - Remaining today (daytime, before the evening session): T24 screenshots via the kit's binary-safe tool, T16, T18 fresh-clone/privacy audit, D10 DEV-login check, POST_DRAFT rewrite around the real product (signup/trial/hosted first run), session runbook: restart tunnel per TUNNEL.md ≥15 min before the user arrives.
 
+## 2026-10-14 (Thu, morning) — D-LANDING ruled: the product IS the domain root
+
+- Owner: "I did not say the landing page should be /app" — correct; the /app split was the orchestrator/architect's choice and it was wrong for a product whose first impression is sign-up. T22d (a442ba7, 231 tests green, pushed): SPA moved to `docs/` root, script tags `?v=5`; recorded demo relocated to `docs/demo/` (build_demo.py updated, deterministic output re-committed); run_tunnel tools + TUNNEL.md + POST_DRAFT + architecture §11 rehomed; product header links `/demo/`, demo links back.
+- Orchestrator verified live after the CDN settled: `https://replydeskhq.tech/` renders the sign-up product (Sign up + Founding plan + demo link), `/demo/` serves the recorded demo (200), `/service.json` serves the live tunnel config at the root. The end-to-end proof from ~05:00 (signup → trial → page-paste → verified model drafts) applies unchanged — only paths moved.
+
+## 2026-10-14 (Thu, morning) — /help shipped and verified live
+
+- Owner ruling: a /help page with instructions for pulling reviews in, ready for his colleague's sign-up tonight. T24b (0ec9661, 243 tests green, pushed): `docs/help/index.html` — Google desktop + phone paths, Yelp, manual `5 | text` fallback, what-happens-next, verbatim trust block (never your Google/Yelp password; nothing posted; account in your browser; reviews go only to the configured model), support = repo link only. Product header + reviews-box + zero-found hint all link `/help/`; script tags `?v=6`.
+- Orchestrator live check: `/help/` 200 with all five content checks (google steps, copy instruction, manual lines, yelp, trust block); product links to it.
+
+## 2026-10-14 (Thu, midday) — live signup test matrix (owner-requested)
+
+- Run by the orchestrator against https://replydeskhq.tech/ in a real browser (current deploy 0ec9661, `?v=6` scripts), synthetic account "Casey Local":
+  1. Short password → inline "Password must be at least 8 characters." ✓
+  2. Invalid email → inline "Please enter a valid email address." ✓
+  3. Valid signup → "Your workspace — Casey Local" + founding-plan gate ✓
+  4. Activate trial → Draft button unlocked ✓
+  5. Logout → returns to auth view ✓
+  6. Duplicate email with different casing → "An account with that email already exists." ✓ (case-insensitive)
+  7. Wrong password → generic "Wrong email or password." ✓ (no account enumeration)
+  8. Correct login → workspace restored with the trial still active ✓
+- Signup flow fully verified on the live product.
+
+## 2026-10-14 (Thu) — **FIRST USER LANDED (B1)** — owner-run session
+
+- The owner reports: he signed his user up (his colleague), walked him through a review response end-to-end, and — the strongest possible demo of the core loop — **tailored the tone guide to the user's voice and re-drafted a different prompt with it**. The interaction was recorded as a voice memo (stays on the owner's device; never enters the repo — A10/B1).
+- Pending facts for the post (owner to supply; only he holds them): hosted at replydeskhq.tech vs local; friction points; did-he/would-he-pay at $9/mo; what the user asked for next.
+- Orchestrator actions: My First User section drafted into POST_DRAFT with the challenge's four questions as structured placeholders; screenshots (T16), fresh-clone audit (T18), D10 DEV-login check, and post completion proceed toward the Sat 1 PM PDT publish target.
+
+## 2026-10-15 (Thu, evening) — transcript recovered and transcribed; My First User WRITTEN
+
+- The owner sent the session voice memo via Telegram. Path taken, all within the box: started the dormant Hermes gateway (stale lock cleared, installed launcher, Telegram polling confirmed), received the 22.6-minute m4a into Hermes's audio cache, transcribed it with the **already-installed faster-whisper (open-source, CPU, base model, 116 s)** — no new accounts, no cloud. Transcript lives only in gitignored `out/first-user-transcript.txt`.
+- **The four answers, extracted:** (1) hosted first run at replydeskhq.tech — signup, trial activation, real Google review pasted; (2) would-pay: **"Yeah, absolutely"** at $9/mo + "we just have to set something up, a payment plan"; (3) top ask: **new-review notifications** ("that's going to be my catch"); (4) friction: the real Google page paste did not parse first try — manual `5 | text` fallback used ("a little finicky"); first draft slower than the post-tone-change redraft. The redraft moment: tone guide tuned ("don't be too wordy… always sign off with God bless") → tight re-draft → **"See, I like that. I suck at putting all this together — but now reading this… I like it."**
+- POST_DRAFT's My First User is written in full from the session (identity-private: the reviewer's name, the business's trade details, and all raw transcript content stay out of the repo).
+- **Actionable finding for the build:** the page-paste parser must handle the shape a real user's Google copy produces (the session's paste failed until manual lines). Orchestrator requested the exact failing paste from the owner (he can re-copy the same profile) to aim the fix at reality rather than guess — pending his paste into out/. B1 session milestone complete in the tracker.
+
+## 2026-10-15 (Thu, later) — full submission drafted
+
+- POST_DRAFT.md rewritten as the complete submission body per the challenge template: submission line, What I Built (product, flow, triage, verifier, who pays), Demo (live product + recorded run + two screenshot slots marked for Friday), Code embed, How I Built It (open-weight core on own hardware via accountless tunnel; deterministic triage; fact-grounding verifier with the "10% off" catch; tone-guide-as-product with the first user's redraft), Why Open Innovation Matters (review data never leaves the building; config-line endpoint; agent team), My Agent Session (JOURNAL.md + sign-off trailers, honest defect mentions), My First User (written from the transcript, identity-private), Prize Categories (.tech). Title proposed for the owner's pick at publish; tags per rules (devchallenge, hf26challenge). Headings to be re-verified in the DEV editor at publish per the kit checklist.
+- Screenshot files (docs/landing.png, docs/workspace.png) pending Friday's T16 run — the draft references them with ?v=1.
+
 ## 2026-10-14 (Wed, PM) — T14a and T15 accepted; Thursday-ready
 
 - T14a (5268488): 15 dedicated assist tests over a recording stub; one flagged code fix accepted — multi-line assist output now malformed per §5's one-line contract (3-line change, tested). 139 tests green.
