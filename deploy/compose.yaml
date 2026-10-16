@@ -2,6 +2,10 @@ services:
   replydesk-api:
     build: .
     env_file: .env
+    environment:
+      ACCOUNTS_DB: /app/data/accounts.db
+    volumes:
+      - replydesk-api-data:/app/data
     restart: unless-stopped
     networks: [web]
     healthcheck:
@@ -18,3 +22,6 @@ services:
 networks:
   web:
     external: true
+
+volumes:
+  replydesk-api-data:

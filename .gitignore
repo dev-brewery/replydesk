@@ -22,3 +22,9 @@ venv/
 .ruff_cache/
 .coverage
 htmlcov/
+
+# local sqlite accounts db (T28: a local --serve-api run never gets staged)
+data/
+*.db
+*.db-wal
+*.db-shm
