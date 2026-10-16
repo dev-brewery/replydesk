@@ -2,11 +2,12 @@
 
 import io
 import json
+import os
 import tempfile
-import urllib.error
 import unittest
 from unittest import mock
 
+import urllib.error
 from replydesk.llm import FixtureLLM, HttpLLM, LLMError, load_env_config
 
 
@@ -188,6 +189,33 @@ class LoadEnvConfigTests(unittest.TestCase):
     def test_unrecognized_keys_ignored(self):
         path = self._write("OTHER=x\nLLM_MODEL=m\n")
         self.assertEqual(load_env_config(path), {"LLM_MODEL": "m"})
+
+    def test_environ_only(self):
+        path = self._write("OTHER=x\n")
+        env = {"LLM_BASE_URL": "https://env.example/v1", "LLM_MODEL": "env-model",
+               "LLM_API_KEY": "env-key"}
+        with mock.patch.dict(os.environ, env, clear=False):
+            cfg = load_env_config(path)
+        self.assertEqual(cfg, env)
+
+    def test_file_supplements_missing_environ_keys(self):
+        path = self._write("LLM_BASE_URL=https://file.example/v1\n"
+                           "LLM_MODEL=file-model\nLLM_API_KEY=file-key\n")
+        with mock.patch.dict(os.environ, {"LLM_MODEL": "env-model"},
+                             clear=False):
+            cfg = load_env_config(path)
+        self.assertEqual(cfg, {"LLM_BASE_URL": "https://file.example/v1",
+                               "LLM_MODEL": "env-model",
+                               "LLM_API_KEY": "file-key"})
+
+    def test_environ_wins_over_file(self):
+        path = self._write("LLM_BASE_URL=https://file.example/v1\n"
+                           "LLM_MODEL=file-model\n")
+        with mock.patch.dict(os.environ, {"LLM_MODEL": "env-model"},
+                             clear=False):
+            cfg = load_env_config(path)
+        self.assertEqual(cfg, {"LLM_BASE_URL": "https://file.example/v1",
+                               "LLM_MODEL": "env-model"})
 
 
 if __name__ == "__main__":

@@ -243,6 +243,12 @@ class _ApiHandler(http.server.BaseHTTPRequestHandler):
         self._log(HTTPStatus.NO_CONTENT)
 
     def do_GET(self) -> None:
+        if self.path == "/api/health":
+            # Cheap, authless liveness probe for the container healthcheck.
+            self._send_json(HTTPStatus.OK, '{"ok": true}\n',
+                            cors_origin=self._cors_origin())
+            self._log(HTTPStatus.OK)
+            return
         self._send_json(HTTPStatus.NOT_FOUND, '{"error": "not found"}\n')
         self._log(HTTPStatus.NOT_FOUND)
 

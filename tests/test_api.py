@@ -84,6 +84,31 @@ class ApiServerTest(unittest.TestCase):
         conn.close()
         return resp, data
 
+    # -- health -------------------------------------------------------------
+
+    def test_health_returns_ok(self):
+        resp, data = self.request(method="GET", path="/api/health")
+        self.assertEqual(resp.status, 200)
+        self.assertEqual(resp.getheader("Content-Type"),
+                         "application/json; charset=utf-8")
+        self.assertEqual(json.loads(data), {"ok": True})
+
+    def test_health_echoes_allowlisted_origin(self):
+        resp, _ = self.request(method="GET", path="/api/health",
+                               origin=ALLOWED_ORIGINS[0])
+        self.assertEqual(resp.getheader("Access-Control-Allow-Origin"),
+                         ALLOWED_ORIGINS[0])
+
+    def test_unknown_get_path_is_404(self):
+        resp, data = self.request(method="GET", path="/api/other")
+        self.assertEqual(resp.status, 404)
+        self.assertEqual(json.loads(data), {"error": "not found"})
+
+    def test_draft_post_still_works_alongside_health(self):
+        resp, data = self.request(_valid_body())
+        self.assertEqual(resp.status, 200)
+        self.assertIn("drafts", json.loads(data))
+
     # -- CORS ---------------------------------------------------------------
 
     def test_preflight_echoes_allowlisted_origin(self):

@@ -7,6 +7,7 @@ paths never touch load_env_config; FixtureLLM does zero network.
 """
 
 import json
+import os
 import urllib.error
 import urllib.request
 from typing import Mapping, Protocol, runtime_checkable
@@ -102,7 +103,9 @@ def load_env_config(env_path: str) -> dict:
     """Parse an .env-style file: KEY=value lines, # comments, blank lines allowed.
 
     Recognizes LLM_BASE_URL, LLM_MODEL, LLM_API_KEY. Quoted values are unquoted.
-    Only online mode calls this.
+    Values already present in os.environ win: container platforms inject env
+    vars, and the file only supplements missing keys (local .env keeps working
+    unchanged when the variables are not exported). Only online mode calls this.
     """
     wanted = ("LLM_BASE_URL", "LLM_MODEL", "LLM_API_KEY")
     config: dict = {}
@@ -118,4 +121,8 @@ def load_env_config(env_path: str) -> dict:
             value = value.strip().strip('"').strip("'")
             if name in wanted and value != "":
                 config[name] = value
+    for name in wanted:
+        env_value = os.environ.get(name)
+        if env_value:
+            config[name] = env_value
     return config

@@ -1,0 +1,3 @@
+api.replydeskhq.tech {
+	reverse_proxy replydesk-api:8010
+}
