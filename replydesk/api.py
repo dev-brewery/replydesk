@@ -77,6 +77,8 @@ def runresult_json(run, note: str = "") -> str:
                 "source": d.source.value,
                 "verified": d.verified,
                 "text": d.text,
+                **(({"verifier_notes": list(d.verifier_notes)})
+                   if d.verifier_notes else {}),
             }
             for d in run.drafts
         ],

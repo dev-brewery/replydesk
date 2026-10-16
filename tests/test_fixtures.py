@@ -48,7 +48,7 @@ class TestLoadDemoFixtures(unittest.TestCase):
                 ],
                 canned={"r1": "Thanks!", "r2": "Sorry!"},
             )
-            profile, tone, reviews, canned = load_demo_fixtures(demo)
+            profile, tone, reviews, canned, _prov = load_demo_fixtures(demo)
             self.assertIsInstance(profile, BusinessProfile)
             self.assertEqual(profile.name, "Sample Cafe")
             self.assertEqual(profile.city, "Sampletown")
@@ -63,7 +63,7 @@ class TestLoadDemoFixtures(unittest.TestCase):
             demo = Path(tmp) / "demo"
             demo.mkdir()
             write_demo_dir(demo)  # entry without a date key
-            _, _, reviews, _ = load_demo_fixtures(demo)
+            _, _, reviews, _, _ = load_demo_fixtures(demo)
             self.assertEqual(len(reviews), 1)
 
     def test_missing_directory(self):
@@ -146,6 +146,78 @@ class TestLoadDemoFixtures(unittest.TestCase):
             with self.assertRaises(FixtureError) as ctx:
                 load_demo_fixtures(demo)
             self.assertIn("non-empty", str(ctx.exception))
+
+    def test_provenance_key_is_not_a_draft(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            demo = Path(tmp) / "demo"
+            demo.mkdir()
+            write_demo_dir(
+                demo,
+                canned={
+                    "r1": "Thanks!",
+                    "provenance": {
+                        "r1": {
+                            "source": "template",
+                            "note": "kept canned: model failed verification twice",
+                        }
+                    },
+                },
+            )
+            _, _, _, canned, prov = load_demo_fixtures(demo)
+            self.assertEqual(canned, {"r1": "Thanks!"})
+            self.assertEqual(
+                prov,
+                {"r1": {
+                    "source": "template",
+                    "note": "kept canned: model failed verification twice",
+                }},
+            )
+
+    def test_absent_provenance_yields_empty_map(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            demo = Path(tmp) / "demo"
+            demo.mkdir()
+            write_demo_dir(demo)
+            _, _, _, canned, prov = load_demo_fixtures(demo)
+            self.assertEqual(canned, {"r1": "Thank you!"})
+            self.assertEqual(prov, {})
+
+    def test_provenance_bad_source_rejected(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            demo = Path(tmp) / "demo"
+            demo.mkdir()
+            write_demo_dir(
+                demo,
+                canned={"r1": "Thanks!", "provenance": {
+                    "r1": {"source": "oracle", "note": "n"}}},
+            )
+            with self.assertRaises(FixtureError) as ctx:
+                load_demo_fixtures(demo)
+            self.assertIn("source", str(ctx.exception))
+
+    def test_provenance_bad_shape_rejected(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            demo = Path(tmp) / "demo"
+            demo.mkdir()
+            write_demo_dir(
+                demo, canned={"r1": "Thanks!", "provenance": {"r1": "template"}}
+            )
+            with self.assertRaises(FixtureError) as ctx:
+                load_demo_fixtures(demo)
+            self.assertIn("provenance", str(ctx.exception))
+
+    def test_provenance_missing_note_rejected(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            demo = Path(tmp) / "demo"
+            demo.mkdir()
+            write_demo_dir(
+                demo,
+                canned={"r1": "Thanks!", "provenance": {
+                    "r1": {"source": "template"}}},
+            )
+            with self.assertRaises(FixtureError) as ctx:
+                load_demo_fixtures(demo)
+            self.assertIn("note", str(ctx.exception))
 
 
 if __name__ == "__main__":

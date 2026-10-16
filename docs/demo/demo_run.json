@@ -58,9 +58,12 @@
     },
     {
       "review_id": "ty-2",
-      "source": "model",
+      "source": "template",
       "text": "We are sorry the water heater swap needed a second visit. You are right to expect the job finished the first time. Your two-year workmanship warranty covers this repair, and we'll come back to check the fittings at no charge. Call us any morning and we'll make it right.",
-      "verified": true
+      "verified": false,
+      "verifier_notes": [
+        "kept canned: model draft failed verification twice (A5 fallback)"
+      ]
     },
     {
       "review_id": "ty-3",

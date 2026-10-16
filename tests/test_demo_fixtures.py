@@ -7,6 +7,7 @@ and the canned triage-assist outcomes (one flip, one confirm) per ARCHITECTURE
 """
 
 import json
+import tempfile
 import unittest
 from datetime import date
 from pathlib import Path
@@ -37,6 +38,14 @@ class DemoFixtureSetTest(unittest.TestCase):
                 self.assertNotIn(decision.review.review_id, self.drafts)
                 continue
             draft = self.drafts[decision.review.review_id]
+            if draft.review_id == "ty-2":
+                # provenance override: kept canned draft after the model
+                # failed verification — TEMPLATE-class, not verified.
+                self.assertIs(draft.source, DraftSource.TEMPLATE)
+                self.assertFalse(draft.verified)
+                self.assertEqual(len(draft.verifier_notes), 1)
+                self.assertIn("verification", draft.verifier_notes[0])
+                continue
             self.assertTrue(draft.verified, decision.review.review_id)
             self.assertEqual(draft.verifier_notes, ())
             self.assertIn(draft.source, NON_HUMAN_SOURCES)
@@ -95,12 +104,44 @@ class DemoFixtureSetTest(unittest.TestCase):
                 self.assertIn("|", canned[f"assist:{review_id}"])
 
     def test_loader_round_trip_on_the_committed_set(self):
-        profile, tone_guide, reviews, canned = load_demo_fixtures(DEMO_DIR)
+        profile, tone_guide, reviews, canned, _prov = load_demo_fixtures(DEMO_DIR)
         self.assertEqual(profile.name, "Ridgeline Plumbing")
         self.assertEqual(profile.kind, "plumbing contractor")
         self.assertEqual(profile.city, "Cedar Falls")
         self.assertEqual(len(reviews), 8)
         self.assertEqual(len(canned), 11)  # 8 drafts + 3 assist entries
+        self.assertNotIn("provenance", canned)  # reserved key, not a draft
+
+    def test_provenance_marks_kept_canned_draft_as_template(self):
+        prov = json.loads(
+            (DEMO_DIR / "canned_drafts.json").read_text(encoding="utf-8")
+        )["provenance"]["ty-2"]
+        draft = self.drafts["ty-2"]
+        self.assertIs(draft.source, DraftSource.TEMPLATE)
+        self.assertFalse(draft.verified)
+        self.assertEqual(draft.verifier_notes, (prov["note"],))
+        # Unprovenanced drafts keep pipeline provenance and notes.
+        for rid in ("ty-1", "fx-1"):
+            self.assertIn(self.drafts[rid].source, NON_HUMAN_SOURCES)
+            self.assertTrue(self.drafts[rid].verified)
+            self.assertEqual(self.drafts[rid].verifier_notes, ())
+
+    def test_recorded_output_carries_the_provenance_note(self):
+        import sys
+        _TOOLS_DIR = Path(fixtures_pkg.__file__).resolve().parents[2] / "tools"
+        sys.path.insert(0, str(_TOOLS_DIR))
+        from build_demo import build_demo
+        with tempfile.TemporaryDirectory() as tmp:
+            _, json_path = build_demo(tmp)
+            payload = json.loads(json_path.read_text(encoding="utf-8"))
+            html = (Path(tmp) / "index.html").read_text(encoding="utf-8")
+        by_id = {d["review_id"]: d for d in payload["drafts"]}
+        self.assertEqual(by_id["ty-2"]["source"], "template")
+        self.assertFalse(by_id["ty-2"]["verified"])
+        self.assertIn("kept canned", by_id["ty-2"]["verifier_notes"][0])
+        self.assertNotIn("verifier_notes", by_id["ty-1"])
+        self.assertIn("Source: TEMPLATE", html)
+        self.assertIn("kept canned", html)
 
 
 if __name__ == "__main__":

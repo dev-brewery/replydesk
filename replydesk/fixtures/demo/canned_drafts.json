@@ -9,5 +9,11 @@
   "human-refund": "We are sorry about the double charge on the service call. A person at Ridgeline Plumbing will review the billing and reach out directly.",
   "ty-1": "Thank you for taking the time to write this. A dripping faucet sounds small, but I'm glad we got someone out the same week so it wasn't dripping into your weekend. And I appreciate you noticing the kitchen — we should leave every work site as clean as we found it, so hearing it actually happened means a lot. That friendliness from the first call comes from the whole crew, and I'll pass your kind words along. If anything else acts up, you know where to find us.",
   "ty-2": "We are sorry the water heater swap needed a second visit. You are right to expect the job finished the first time. Your two-year workmanship warranty covers this repair, and we'll come back to check the fittings at no charge. Call us any morning and we'll make it right.",
+  "provenance": {
+    "ty-2": {
+      "source": "template",
+      "note": "kept canned: model draft failed verification twice (A5 fallback)"
+    }
+  },
   "ty-3": "Thank you for this. The boot covers and the shutoff valve walkthrough are exactly the details I care about — you should finish a job knowing your own plumbing a little better than when we arrived. Hearing that the crew took pride in the work means a lot, because it tells me the standards I hold are the ones you actually felt on the ground. Thanks for trusting us with your home and for taking the time to say so."
 }

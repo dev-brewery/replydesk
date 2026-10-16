@@ -13,7 +13,14 @@ from pathlib import Path
 
 from ..draft import run as _run
 from ..llm import FixtureLLM
-from ..model import BusinessProfile, Review, RunResult, ToneGuide
+from ..model import (
+    BusinessProfile,
+    DraftResult,
+    DraftSource,
+    Review,
+    RunResult,
+    ToneGuide,
+)
 
 FIXTURE_DATE = date(2026, 10, 12)  # pinned; all fixture review dates <= this
 
@@ -46,11 +53,26 @@ def _require_str(value, what: str) -> str:
     return value
 
 
-def load_demo_fixtures(demo_dir) -> tuple[BusinessProfile, ToneGuide, list[Review], dict[str, str]]:
+_PROVENANCE_SOURCES = {source.value for source in DraftSource}
+
+
+def load_demo_fixtures(
+    demo_dir,
+) -> tuple[
+    BusinessProfile,
+    ToneGuide,
+    list[Review],
+    dict[str, str],
+    dict[str, dict[str, str]],
+]:
     """Load and schema-validate a demo fixture directory.
 
-    Returns (BusinessProfile, ToneGuide, list[Review], {review_id: canned_draft}).
-    Raises FixtureError with a clear message on any malformed input.
+    Returns (BusinessProfile, ToneGuide, list[Review], {review_id: canned_draft},
+    {review_id: provenance}). ``provenance`` is optional in canned_drafts.json
+    (under the reserved "provenance" key) and marks drafts whose committed text
+    is NOT the source the pipeline would claim — e.g. a hand-authored canned
+    draft kept after the model failed verification. Raises FixtureError with a
+    clear message on any malformed input.
     """
     directory = Path(demo_dir)
     if not directory.is_dir():
@@ -105,6 +127,26 @@ def load_demo_fixtures(demo_dir) -> tuple[BusinessProfile, ToneGuide, list[Revie
 
     if not isinstance(canned_raw, dict):
         raise FixtureError("canned_drafts.json must be a JSON object of review_id -> draft")
+    provenance_raw = canned_raw.pop("provenance", {})
+    if not isinstance(provenance_raw, dict):
+        raise FixtureError(
+            "canned_drafts.json 'provenance' must be an object of review_id -> {source, note}"
+        )
+    provenance: dict[str, dict[str, str]] = {}
+    for rid, entry in provenance_raw.items():
+        what = f"canned_drafts.json provenance entry {rid!r}"
+        _require_str(rid, "canned_drafts.json provenance key")
+        if not isinstance(entry, dict):
+            raise FixtureError(f"{what} must be an object with 'source' and 'note'")
+        source = _require_str(entry.get("source"), f"{what} 'source'")
+        if source not in _PROVENANCE_SOURCES:
+            raise FixtureError(
+                f"{what} 'source' must be one of {sorted(_PROVENANCE_SOURCES)}"
+            )
+        provenance[rid] = {
+            "source": source,
+            "note": _require_str(entry.get("note"), f"{what} 'note'"),
+        }
     canned: dict[str, str] = {}
     for key, draft in canned_raw.items():
         what = f"canned_drafts.json entry {key!r}"
@@ -115,7 +157,7 @@ def load_demo_fixtures(demo_dir) -> tuple[BusinessProfile, ToneGuide, list[Revie
         raise FixtureError(f"canned_drafts.json is missing drafts for review_ids: {sorted(missing)}")
 
     tone_guide = ToneGuide(voice=tone_text, facts=())
-    return profile, tone_guide, reviews, canned
+    return profile, tone_guide, reviews, canned, provenance
 
 
 def demo_run() -> RunResult:
@@ -125,5 +167,30 @@ def demo_run() -> RunResult:
     stamped with the pinned FIXTURE_DATE so output stays byte-deterministic.
     """
     demo_dir = Path(__file__).resolve().parent / "demo"
-    profile, tone_guide, reviews, canned = load_demo_fixtures(demo_dir)
-    return _run(tone_guide, profile, reviews, FixtureLLM(canned), today=FIXTURE_DATE)
+    profile, tone_guide, reviews, canned, provenance = load_demo_fixtures(demo_dir)
+    run = _run(tone_guide, profile, reviews, FixtureLLM(canned), today=FIXTURE_DATE)
+    if not provenance:
+        return run
+    # Honest provenance: a provenance entry overrides the draft's recorded
+    # source (e.g. a canned draft kept after the model failed verification is
+    # TEMPLATE, not MODEL) and surfaces the reason as a visible note.
+    overridden = []
+    for draft in run.drafts:
+        entry = provenance.get(draft.review_id)
+        if entry is None:
+            overridden.append(draft)
+            continue
+        overridden.append(DraftResult(
+            review_id=draft.review_id,
+            text=draft.text,
+            source=DraftSource(entry["source"]),
+            verified=False,
+            verifier_notes=(entry["note"],),
+        ))
+    return RunResult(
+        profile=run.profile,
+        tone_guide=run.tone_guide,
+        decisions=run.decisions,
+        drafts=tuple(overridden),
+        generated_on=run.generated_on,
+    )

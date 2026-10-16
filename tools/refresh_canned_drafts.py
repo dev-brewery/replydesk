@@ -57,7 +57,7 @@ def main() -> int:
         api_key=config.get("LLM_API_KEY", ""),
     ))
 
-    profile, tone_guide, reviews, canned = load_demo_fixtures(DEMO_DIR)
+    profile, tone_guide, reviews, canned, _provenance = load_demo_fixtures(DEMO_DIR)
     result = draft_run(tone_guide, profile, reviews, client, today=FIXTURE_DATE)
 
     updated = dict(canned)
