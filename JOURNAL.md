@@ -374,6 +374,15 @@ Unblocked meanwhile: T02→T10 offline cadence proceeds regardless of any ruling
 - POST_DRAFT.md rewritten as the complete submission body per the challenge template: submission line, What I Built (product, flow, triage, verifier, who pays), Demo (live product + recorded run + two screenshot slots marked for Friday), Code embed, How I Built It (open-weight core on own hardware via accountless tunnel; deterministic triage; fact-grounding verifier with the "10% off" catch; tone-guide-as-product with the first user's redraft), Why Open Innovation Matters (review data never leaves the building; config-line endpoint; agent team), My Agent Session (JOURNAL.md + sign-off trailers, honest defect mentions), My First User (written from the transcript, identity-private), Prize Categories (.tech). Title proposed for the owner's pick at publish; tags per rules (devchallenge, hf26challenge). Headings to be re-verified in the DEV editor at publish per the kit checklist.
 - Screenshot files (docs/landing.png, docs/workspace.png) pending Friday's T16 run — the draft references them with ?v=1.
 
+## 2026-10-15 (Thu, night) — evidence, audit, and screenshots DONE (owner: "nothing waits for tomorrow")
+
+- Owner challenge accepted and acted on: screenshots and audit ran tonight, not Friday.
+- T16 (29fefcb): screenshots via the kit tool — landing shot from the live page (assets fetched locally, headless render), workspace shot from the committed demo (draft cards). PNG signatures + density validated programmatically (this model config cannot view images — the owner's eyeball pass before publish is the final gate per kit rule). POST_DRAFT (full submission) committed in the same commit.
+- T18 (8d679cc): `tools/final_audit.py` — fresh-clone export (no .env/.privacy-patterns/out) + offline suite + privacy scan + MUST checklist. **The audit immediately caught a real A9 gap**: entrypoint/API tests passed only when a local `.env` existed — exactly the class of bug T18 exists for; builder fixed the API's degraded-mode validation (400 for malformed input regardless of client state) with a regression test, disclosed as a behavioral touch. The builder's first commit attempt was BLOCKED by the privacy guard (real pattern values embedded as test fixtures) — rewritten with synthetic patterns, no bypass. The guard earns its keep.
+- Orchestrator verified: suite 249 OK; `py tools/final_audit.py` → AUDIT: PASS (fresh-clone 244 OK offline, privacy scan clean over 8 patterns); both PNGs committed as binaries and live on raw.githubusercontent (200) — the post's image URLs resolve.
+- Remaining human gates before publish: owner eyeballs the two PNGs; owner logs into dev.to in the driven Chrome (D10 — confirmed NOT logged in tonight); owner picks/keeps the title; failing-paste for the parser fix remains optional and pending.
+- Publish window: Sat 1 PM PDT target / 6 PM hard stop (D2-B).
+
 ## 2026-10-14 (Wed, PM) — T14a and T15 accepted; Thursday-ready
 
 - T14a (5268488): 15 dedicated assist tests over a recording stub; one flagged code fix accepted — multi-line assist output now malformed per §5's one-line contract (3-line change, tested). 139 tests green.
