@@ -11,7 +11,7 @@ Whole test suite runs offline: `py -m unittest discover -s tests`.
 
 ## 1. Final file map
 
-```
+```python
 replydesk/                  # python package
   __init__.py
   model.py                  # dataclasses + enums (no logic beyond helpers)
@@ -22,6 +22,9 @@ replydesk/                  # python package
   draft.py                  # drafting pipeline: prompt -> verify -> retry -> fallback
   llm.py                    # LLMClient protocol, HttpLLM, FixtureLLM, .env loader
   render.py                 # RunResult -> standalone HTML (no server needed)
+  api.py                    # T22: /api/draft bridge (§12) + T27: /api/auth/* (§13)
+  accounts.py               # T26: SQLite account store — users + sessions (§13)
+  tunnel.py                 # T23 helpers: parse quick-tunnel URL, write service.json
   fixtures/
     __init__.py             # FIXTURE_DATE, demo loader, demo_run()
     demo/                   # committed demo fixture set (T11; identity ruled D1)
@@ -30,26 +33,30 @@ replydesk/                  # python package
       reviews.json          #   8 synthetic reviews, dates <= FIXTURE_DATE
       canned_drafts.json    #   offline "model" replies, keyed by review_id
 app.py                      # local web UI (stdlib http.server), default offline;
-                            # --serve-api starts the §12 JSON bridge instead
-replydesk/api.py            # T22: /api/draft bridge: CORS allowlist, request caps,
-                            # runresult_json serializer (shared with build_demo)
-tests/                      # offline suite; network always mocked; inline neutral literals
+                            # --serve-api starts the §12/§13 JSON server instead
+tests/                      # offline suite; network always mocked; inline neutral
+                            # literals; node parity tests skip cleanly w/o node
 tools/
-  build_demo.py             # regenerate docs/ demo output from fixtures (deterministic)
+  build_demo.py             # regenerate docs/demo/ output from fixtures (deterministic)
   refresh_canned_drafts.py  # online: replace canned drafts with a real model run (T15)
-  final_audit.py            # fresh-clone offline sim + privacy-pattern scan (T18)
+  final_audit.py            # fresh-clone offline sim + privacy scan incl. history (T18)
   gh-token-to-env.ps1       # kit tool (owner-run)
   screenshot.sh / trim_png.py  # kit tools
-  run_tunnel.ps1 / .sh      # T23: cloudflared quick-tunnel start + service.json writer
+  run_tunnel.ps1 / .sh      # T23: cloudflared quick-tunnel start (cold fallback)
   TUNNEL.md                 #   session runbook (bridge -> tunnel -> commit -> push)
-docs/                       # GitHub Pages root
-  index.html                #   recorded no-JS demo page (§8; untouched by T21+)
-  demo_run.json             #   committed fixture output
+docs/                       # GitHub Pages root = the product SPA (T22d owner ruling)
+  index.html                #   SPA shell: auth view, plan gate, workspace
+  rd.js                     #   pure logic: parser/triage/template ports + local auth
+  app.js                    #   SPA behavior wiring (views, draft flow)
+  service.json              #   live pointer {"status":"live","url":…} -> the API
+  demo/                     #   recorded offline run (§8): index.html + demo_run.json
+  help/                     #   /help: how to copy reviews in (T24b)
   CNAME, *.png              #   custom domain + post screenshots
-  app/                      #   T21: hosted product SPA (§11) — vanilla JS allowed
-    index.html              #     markup + inline CSS + UI wiring
-    rd.js                   #     pure logic ports: parse/triage/template + auth helpers
-    service.json            #     T23: {"status","url"} tunnel pointer (committed)
+deploy/                     # api.replydeskhq.tech host surface (owner VM; Caddy edge)
+  Dockerfile                #   python:3.12-slim; repo tarball fetch; stdlib only
+  compose.yaml              #   service + healthcheck + named data volume (T28)
+  ingress.caddy             #   api.replydeskhq.tech -> replydesk-api:8010
+  README.md                 #   deploy runbook (owner/orchestrator side)
 kit files                   # AGENTS.md, PROJECTGUIDELINES.md, ACCEPTANCE_CRITERIA.md,
                             # PROJECT.md, IMPLEMENTATIONPLAN.md, JOURNAL.md, TASKS.md,
                             # ARCHITECTURE.md, POST_DRAFT.md, POST_TEMPLATE.md,
@@ -60,11 +67,11 @@ out/                        # gitignored: orchestrator briefs + sub-agent stdout
 ```
 
 Not in the map (out of scope, guidelines §3 as amended 2026-10-14): auto-posting,
-scraping, a hosted backend beyond the session-window bridge of §12, any payment
-collection (no card form, no provider — founding trial gate only), partner
-integrations beyond the .tech domain. Accounts exist as the browser-local sign-up +
-trial gate of §11 exactly as the amendment rules; there is no server-side account
-store.
+scraping, any payment collection (no card form, no provider — founding-trial gate
+only; the §13 `stripe_*` columns are inert placeholders, never populated by code),
+partner integrations beyond the .tech domain. The hosted backend is exactly the
+generation bridge of §12 plus the account store of §13 — nothing else. The SPA's
+account UX stays browser-local (§11) until the post-publish T29 flip.
 
 ---
 
@@ -278,16 +285,20 @@ bridge of §12 instead of the form UI — implies the online client; uses the sa
 ALLOWED_ORIGINS = ("https://replydeskhq.tech", "https://dev-brewery.github.io")
 CAPS = {"MAX_BODY_BYTES": 262_144, "MAX_TONE_CHARS": 4_000, "MAX_REVIEWS": 20,
         "MAX_REVIEW_CHARS": 2_000, "MAX_PROFILE_CHARS": 60}   # one auditable table
+        # + auth caps (§13): MAX_NAME_CHARS 60, MAX_EMAIL_CHARS 254,
+        #   MAX_PASSWORD_CHARS 1024 — same table, same audit
 
 def runresult_json(run, *, note: str = "") -> str
     # the demo_run.json schema (tools/build_demo.demo_run_json becomes a thin
     # wrapper; committed docs/ output stays byte-identical) + "note" banner field
     # (present only when non-empty)
 
-def make_api_server(host: str, port: int, client) -> ThreadingHTTPServer
+def make_api_server(host: str, port: int, client,
+                    accounts: "AccountStore | None" = None) -> ThreadingHTTPServer
+    # accounts (§13) wires the /api/auth/* routes; None keeps T22 behavior
 ```
 
-Full endpoint contract in §12.
+Full endpoint contract in §12 (draft) and §13 (auth).
 
 ---
 
@@ -557,6 +568,10 @@ come from this page and the app UI via `tools/screenshot.sh` only (binary-safe; 
 | Browser-local accounts read as a security claim | Verbatim honest copy at sign-up (§11); no security claims anywhere; SPA holds no key material — generation is server-side or clearly-labeled template. |
 | Worst-case bridge latency (20 reviews × retry ladder) exceeds SPA patience | SPA aborts at 420 s and degrades to the labeled template path with the offline note (never a dead end); runbook suggests ≤ 15 reviews per run; observed live latency ~22 s/review. |
 | T24 needs a real browser from the builder session | Browser automation is available to sessions (used for page captures); if unavailable, the builder reports, the orchestrator drives the browser, and the builder commits the artifacts — one commit either way. |
+| Server-side account store mishandles credentials (§13) | PBKDF2-HMAC-SHA256 120 000 iterations + per-user 16-byte salt + timing-safe compare; plaintext passwords never stored, logged, or echoed; tokens are 32-byte `secrets` values; 30-day expiry; auth logs carry status + counts only (never email/token). |
+| Signup rate limiter trusts `X-Forwarded-For` (§13) | Key = the **last** XFF entry (the address Caddy observed and appended); the container's port 8010 is unpublished — reachable only inside the Caddy network; peer-address fallback for direct hits. The limit is abuse friction, not an auth boundary; it is in-memory and resets on restart by design. |
+| SQLite under the threaded API server (§13) | WAL mode at init; one short-lived `sqlite3.connect(path, timeout=5)` per operation; immediate commits; founding-user scale is far below any contention floor. |
+| Accounts backend destabilizes the publish path | Additive by construction (brief architect-6): T26–T28 touch no `docs/` file, change no SPA behavior, gate nothing behind auth; `accounts=None` keeps the bridge byte-compatible with today's `/api/draft`; T29 (the SPA flip) is listed and do-not-start until after publish. |
 
 ## 10. Pending owner determinations wired into this design
 
@@ -575,6 +590,17 @@ come from this page and the app UI via `tools/screenshot.sh` only (binary-safe; 
    `dev-brewery.github.io` Pages origin (testing + fallback; one-line removal);
    PBKDF2 100 000 iterations (tunable constant); SPA draft textareas editable
    (product behavior; the recorded demo page stays read-only).
+7. **Brief architect-6 (2026-10-16, owner direction) is the ruling** for the
+   server-side accounts backend: build it additive tonight (SPA unchanged until
+   AFTER publish), stdlib only, schema carries inert Stripe columns, DB on a
+   Docker volume, host surface = the existing api.replydeskhq.tech bridge.
+   Architect discretions exercised inside that ruling (reversible, on record):
+   PBKDF2 fixed at 120 000 iterations (brief floor "≥120k"); signup rate limit
+   fixed at 5 per IP per rolling 60-minute window (brief's "e.g., 5/hour");
+   XFF keyed on the last entry; `MAX_PASSWORD_CHARS 1024`; wording of the two
+   new error strings (rate limit, auth-required) in the SPA's plain voice;
+   volume name `replydesk-api-data`. **T29 (SPA flip) stays do-not-start until
+   Michael opens the post-publish window — a sequencing rule, not a default.**
 
 ---
 
@@ -734,3 +760,179 @@ before the session**) → verify `replydeskhq.tech/` shows the live service →
 session → flip to `unavailable` → commit + push. The trycloudflare URL is public and
 ephemeral by design (it dies with the process) and carries no owner-infrastructure
 details; the pre-commit privacy guard applies to every commit as always.
+
+---
+
+## 13. Server-side accounts — SQLite store + auth routes (T26–T28; brief architect-6)
+
+**Lineage.** The guidelines §3 amendment (2026-10-14) made sign-up mandatory, and the
+SPA's honest sign-up copy promises "we'll move it to the service when we launch".
+Owner direction (brief architect-6, 2026-10-16, while the post waits to publish):
+build the server-side account backend **now, additively** — the SPA is NOT rewired
+tonight (post integrity: nothing risks the Saturday publish), and the schema is
+Stripe-ready so subscriptions later need no destructive migration.
+
+**Constraints (owner-fixed):** stdlib only — `sqlite3`, `hashlib` PBKDF2,
+`hmac.compare_digest`, `secrets`; no new pip dependencies. Host surface: the
+existing `api.replydeskhq.tech` bridge container (behind Caddy, TLS). Database: a
+Docker named volume. Inert columns `stripe_customer_id` / `stripe_subscription_id`
+exist for a future payment provider; **no code in T26–T28 reads or writes them** —
+payment collection stays out of scope (guidelines §3).
+
+### `replydesk/accounts.py` — the store
+
+```python
+@dataclass(frozen=True)
+class User:
+    id: int
+    email: str
+    name: str
+    created_on: str            # ISO-8601 UTC
+    plan: str                   # 'founding_trial'
+    plan_status: str            # 'trial_active'
+
+class AccountsError(Exception): ...
+class DuplicateEmailError(AccountsError): ...
+
+class AccountStore:
+    def __init__(self, path: str) -> None
+        # creates the DB file (and parent dir) on first open; PRAGMA journal_mode=WAL
+    def create_user(self, name: str, email: str, password: str) -> User
+    def authenticate(self, email: str, password: str) -> User | None
+    def issue_session(self, user_id: int) -> str                 # the token
+    def validate_session(self, token: str) -> User | None        # None = expired/unknown
+    def revoke_session(self, token: str) -> None
+
+def user_json(user: User) -> dict
+    # {id, email, name, created_on, plan, plan_status} — never hash, salt, or token
+```
+
+Schema (created `IF NOT EXISTS` at init; the store owns any future migration):
+
+```sql
+CREATE TABLE IF NOT EXISTS users (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  email         TEXT NOT NULL UNIQUE COLLATE NOCASE,
+  name          TEXT NOT NULL,
+  password_hash TEXT NOT NULL,             -- PBKDF2-SHA-256 output, hex
+  salt          TEXT NOT NULL,             -- 16 random bytes, hex, per user
+  created_on    TEXT NOT NULL,             -- ISO-8601 UTC
+  plan          TEXT NOT NULL DEFAULT 'founding_trial',
+  plan_status   TEXT NOT NULL DEFAULT 'trial_active',
+  stripe_customer_id     TEXT NULL,        -- inert placeholder (§3: no provider exists)
+  stripe_subscription_id TEXT NULL         -- likewise; never populated by T26–T28
+);
+CREATE TABLE IF NOT EXISTS sessions (
+  token      TEXT PRIMARY KEY,              -- secrets.token_urlsafe(32)
+  user_id    INTEGER NOT NULL,
+  created_on TEXT NOT NULL,
+  expires_on TEXT NOT NULL                  -- issued + 30 days
+);
+```
+
+Binding rules:
+
+- **Password hashing:** PBKDF2-HMAC-SHA256, **120 000 iterations** (brief floor
+  ≥120k), 16-byte random salt per user, 32-byte key, hex storage; comparison via
+  `hmac.compare_digest` (timing-safe). Plaintext passwords are never stored,
+  logged, or echoed — no function returns them, no log statement can carry them.
+- **Tokens:** `secrets.token_urlsafe(32)`; sessions expire 30 days after issue;
+  `validate_session` treats an expired row as invalid and deletes it lazily.
+- **Email uniqueness is case-insensitive** (`COLLATE NOCASE`); `create_user` and
+  `authenticate` apply the same trim + lowercase the SPA applies client-side.
+- **Concurrency:** the API server is threaded — one short-lived
+  `sqlite3.connect(path, timeout=5)` per operation, WAL at init, immediate
+  commits. No connection is shared across threads.
+- **Clock:** `created_on` / `expires_on` come from an injectable module-level
+  `now()` (tests monkeypatch it). **No fixture dates are involved — `FIXTURE_DATE`
+  and every committed fixture are untouched by T26–T28.**
+
+### `replydesk/api.py` — auth routes (same handler class, same CORS policy)
+
+`make_api_server(host, port, client, accounts=None)`: `accounts=None` keeps the
+T22 bridge exactly as today (auth routes answer 503) — the default local
+`--serve-api` run is unchanged. `app.py --serve-api` builds the store from the
+`ACCOUNTS_DB` environment variable (default `data/accounts.db`) — **environ only,
+never `load_env_config`** (the container carries no `.env` file by design;
+lesson a3a1cb9). Auth routes never depend on the LLM client: a degraded server
+(no model endpoint) still signs up, logs in, and serves `/api/auth/me`.
+
+Authorization header: `Authorization: Token <token>` (scheme matched
+case-insensitively; token capped at 64 chars before lookup).
+Every `/api/auth/*` response (success and error) carries the same origin-echo
+CORS policy as `/api/draft`; **preflight for auth routes must allow the
+`Authorization` request header** (`Access-Control-Allow-Headers:
+Content-Type, Authorization`) — the current preflight allows `Content-Type`
+only, so preflight becomes route-aware. Logs: method, path, status, counts —
+never password, hash, token, or email.
+
+| Route | Auth | Body | Success | Errors |
+|---|---|---|---|---|
+| `POST /api/auth/signup` | — | `{name, email, password}` | `201 {"token", "user"}` | 400 validation · 409 duplicate · 429 rate-limited |
+| `POST /api/auth/login` | — | `{email, password}` | `200 {"token", "user"}` | 401 generic |
+| `GET /api/auth/me` | bearer | — | `200 {"user"}` | 401 |
+| `POST /api/auth/logout` | bearer | — | `204` (session revoked) | 401 |
+
+Validation mirrors the SPA **verbatim** — the same UX words, returned as
+`{"error": …}` JSON: `Please enter your name.` · `Please enter a valid email
+address.` (same shape-regex as `rd.js`) · `Password must be at least 8
+characters.` · `An account with that email already exists.` (409) · `Wrong email
+or password.` (401 — one generic message for unknown email and wrong password
+alike; no account enumeration, matching the SPA). New strings with no SPA
+counterpart, in the same plain voice: `Too many sign-ups from this address. Try
+again later.` (429) and `Please sign in.` (401 on missing/invalid bearer). Caps
+join the auditable `CAPS` table: `MAX_NAME_CHARS 60`, `MAX_EMAIL_CHARS 254`,
+`MAX_PASSWORD_CHARS 1024`; the existing `MAX_BODY_BYTES` bound and the
+malformed-JSON 400 apply to auth POSTs exactly as to `/api/draft`. User text
+(name/email) is never echoed in any error.
+
+**Signup rate limit** (signup only, per brief): **5 signups per IP per rolling
+60-minute window** — an in-memory `{ip: deque[timestamps]}`, window-pruned on
+each attempt, injectable clock; over the limit → 429 (string above). IP key =
+the **last** `X-Forwarded-For` value when present (Caddy's `reverse_proxy`
+appends the address it observed; the container's port 8010 is unpublished, so
+only Caddy can reach it — `deploy/ingress.caddy`), else the TCP peer address.
+Resets on restart (in-memory by design). Login is deliberately not rate-limited
+(brief scope): PBKDF2 makes online guessing expensive and the failure message is
+generic.
+
+`POST /api/draft` is **unchanged**: no auth required, no behavior change — the
+SPA (unchanged tonight) keeps calling it exactly as deployed. Gating generation
+behind a session is a T29 decision, not tonight's.
+
+### Deployment (T28) and offline test strategy
+
+- `deploy/compose.yaml` (additive): named volume `replydesk-api-data` mounted at
+  `/app/data`; `environment: ACCOUNTS_DB=/app/data/accounts.db`; `env_file`,
+  healthcheck, and the unpublished port stay as they are. `.gitignore` gains the
+  DB artifacts (`data/`, `*.db`, `*.db-wal`, `*.db-shm`) so a local `--serve-api`
+  run can never commit a database. `.env.example` documents `ACCOUNTS_DB`
+  (default commented). `deploy/README.md` gains the volume note + redeploy step
+  (`REF=sha` or `--no-cache`, per the layer-cache caveat). Deployment itself is
+  orchestrator/owner-side remote work, not a test — no task step opens a network
+  connection (the T23 pattern); acceptance is file-level + suite green.
+- Store tests: `tempfile.TemporaryDirectory()` DB paths; create → authenticate →
+  issue → validate → revoke round-trips; wrong password → None; duplicate email
+  case-insensitively → `DuplicateEmailError`; expiry via monkeypatched `now()`;
+  WAL confined to the temp dir; no `.env` read anywhere (explicit paths only).
+- API tests: in-process `ThreadingHTTPServer` on an ephemeral loopback port (T22
+  pattern), stub LLM client, temp-dir store: the four routes' full matrix,
+  **exact** error strings (verbatim assertions), 401/409/429 paths, CORS echo on
+  real responses + preflight allowing `Authorization`, `accounts=None` → auth
+  503 while `/api/health` stays 200, rate limit via the injected clock (6th
+  signup in-window → 429; after the window slides → allowed). No socket beyond
+  loopback; no network; suite stays offline (A9).
+
+### T29 — SPA flip to server accounts (listed; **do-not-start** until post-publish)
+
+After publish (and on Michael's explicit go), the SPA switches from
+browser-local accounts (§11) to the §13 routes: `rd.js` auth helpers gain async
+server variants (signup/login/me/logout with `Authorization: Token`, base URL
+from the existing `service.json` pointer); sessions persist via the token;
+**local→server migration happens on first login** — a browser holding a local
+`rd_accounts` record migrates it to the server (same credentials, plan state
+carried: local `{plan:'founding', status:'trial', activated_on}` maps onto the
+server defaults) and drops the local record only after the server confirms;
+the sign-up honest copy is reworded to match reality. Outline only — a fresh
+architect pass details T29 when the post-publish window opens; nothing in
+T26–T28 precommits its UX.

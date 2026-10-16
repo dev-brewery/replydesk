@@ -51,6 +51,11 @@ orchestrator's live session window per `tools/TUNNEL.md` (ARCHITECTURE §12).
 | T21e | Draft flow: `service.json` → `/api/draft` → cards; offline path | T21c, T21d, T22 | — | A4, A5, D5 |
 | T23 | Tunnel tooling + `service.json` + runbook (`run_tunnel.*`, `TUNNEL.md`) | T22 | — | §3-AM, D5 |
 | T24 | Hosted end-to-end verification + screenshots (synthetic account) | T21e, T23 | session | B1, D4, D5 |
+| T25 | Parser: Google Business Profile dashboard shape + `/help` path (retroactive row, architect-6; spec of record = JOURNAL 2026-10-16 + commit) | T19, T20 | — | A1, A10 |
+| T26 | `replydesk/accounts.py`: SQLite account store (§13) | T01 | — | §3-AM, A9, A10 |
+| T27 | `/api/auth/*` routes + auth caps + signup rate limit (§13) | T22, T26 | — | §3-AM, A9, A10 |
+| T28 | deploy: named data volume + `ACCOUNTS_DB` + gitignore/docs (§13) | T27 | — | §3-AM, A9, A10 |
+| T29 | SPA flips to server accounts + local→server migration (§13 outline) | T28 | **post-publish** | §3-AM |
 
 Ordering rationale (guidelines §9): offline demo spine T01–T12 lands before anything
 remote; the A5 verifier + fallback (T06/T08) lands before Thursday's first-user
@@ -71,6 +76,21 @@ the live session window, as the synthetic dress rehearsal for Thursday evening's
 first-user session — its screenshots double as T16's app-UI evidence. The recorded
 demo page at `/` is untouched throughout (ARCHITECTURE §8 JS boundary). §3-AM = the
 §3 amendment (sign-up mandatory, hosted first-user run, founding-trial gate).
+
+T25–T29 (brief architect-6, 2026-10-16; contracts in ARCHITECTURE §13): T25 is a
+retroactive row — the parser fix for the owner's real failing paste landed via a
+direct orchestrator brief (journaled 2026-10-16) without a TASKS entry; recorded
+here so the numbering the brief continues from is complete. **T26–T28 are the
+owner-directed accounts backend, built while the post waits to publish —
+additive by construction:** stdlib only, no `docs/` file touched, no SPA behavior
+change, `/api/draft` ungated, `accounts=None` keeps the bridge byte-compatible.
+T26 is self-contained (no api.py dependency); T27 wires the routes into the
+existing handler; T28 is deploy wiring with file-level acceptance (deployment
+itself is remote, orchestrator-side — no task step opens a network connection;
+the T23 pattern). **T29 is listed and do-not-start**: the SPA flip waits until
+Michael opens the post-publish window (post integrity — standing rule 6). No
+fixture dates are introduced anywhere in T26–T29; `FIXTURE_DATE` and all
+committed fixtures are untouched.
 
 ---
 
@@ -536,3 +556,109 @@ demo page at `/` is untouched throughout (ARCHITECTURE §8 JS boundary). §3-AM 
   eyeballed, fictional data only (A10); report confirms each live check ran
   against the hosted URL; suite still green; no real reviews or real accounts
   involved anywhere.
+
+## T25 — Parser: Business-Profile dashboard shape (retroactive; DONE)
+
+- **Status:** landed 2026-10-16 via a direct orchestrator brief after the owner
+  supplied the real failing paste (gitignored `out/`); committed and pushed; the
+  spec of record is the JOURNAL entry of 2026-10-16 plus the commit itself.
+  Recorded here by architect-6 for numbering continuity — nothing to build.
+- **What it was:** star-word rating anchors (`starstarstar…`), dashboard noise
+  tokens (`All/Replied/Unreplied` tabs), `open_in_new` ligature stripping,
+  absolute-date scaffolding — in BOTH `paste_parse.py` and the JS port; `/help`
+  gained the business-dashboard path; SPA bumped `?v=7`.
+
+## T26 — `replydesk/accounts.py` — SQLite account store (§13)
+
+- **Goal:** Per ARCHITECTURE §13: `User` dataclass, `AccountsError` /
+  `DuplicateEmailError`, `AccountStore(path)` — `__init__` creates the DB file
+  (+ parent dir) and sets `journal_mode=WAL`; `create_user` / `authenticate` /
+  `issue_session` / `validate_session` / `revoke_session`; `user_json`
+  serializer (id, email, name, created_on, plan, plan_status — never hash/salt).
+  Schema exactly per §13 (`users` with UNIQUE COLLATE NOCASE email + inert
+  `stripe_*` NULL columns never touched by code; `sessions` with token PK).
+  PBKDF2-HMAC-SHA256 120 000 iterations, 16-byte per-user salt, 32-byte key,
+  hex, `hmac.compare_digest`; tokens `secrets.token_urlsafe(32)`; sessions
+  expire 30 days after issue (lazily deleted on validate); one short-lived
+  `sqlite3.connect(path, timeout=5)` per operation (threaded server); email
+  trim + lowercase before store/lookup; injectable module-level `now()` for all
+  timestamps. Plaintext passwords are never stored, logged, or echoed.
+- **Files:** `replydesk/accounts.py`, `tests/test_accounts.py`.
+- **Acceptance:** Suite green offline with `tempfile` DB paths (no `.env`, no
+  network, no fixture dates): create → authenticate → issue → validate → revoke
+  round-trip; wrong password → None; duplicate email (case-insensitive) →
+  `DuplicateEmailError`; expired session → None (monkeypatched `now()`);
+  `user_json` contains no hash/salt; WAL artifacts confined to the temp dir.
+  ACs: §3-AM (server-side accounts), A9 (offline), A10 (no secrets in code).
+
+## T27 — `/api/auth/*` routes + caps + signup rate limit (§13)
+
+- **Goal:** Per ARCHITECTURE §13, extend `replydesk/api.py`:
+  `make_api_server(host, port, client, accounts=None)` (`None` → auth routes 503,
+  everything else unchanged); `app.py --serve-api` builds the store from the
+  `ACCOUNTS_DB` environ (default `data/accounts.db`) — environ only, never
+  `load_env_config`. Routes: `POST /api/auth/signup` → 201 `{token, user}` ·
+  `POST /api/auth/login` → 200 `{token, user}` · `GET /api/auth/me` (bearer) →
+  200 `{user}` / 401 · `POST /api/auth/logout` (bearer) → 204 + revocation.
+  `Authorization: Token <token>` parsing (case-insensitive scheme, ≤64 chars).
+  Validation mirrors the SPA's strings VERBATIM (`Please enter your name.` ·
+  `Please enter a valid email address.` · `Password must be at least 8
+  characters.` · `An account with that email already exists.` → 409 · `Wrong
+  email or password.` → 401 generic); new strings `Too many sign-ups from this
+  address. Try again later.` (429) and `Please sign in.` (401 bearer). Caps join
+  `CAPS` (MAX_NAME_CHARS 60, MAX_EMAIL_CHARS 254, MAX_PASSWORD_CHARS 1024);
+  MAX_BODY_BYTES + the malformed-JSON 400 apply as to `/api/draft`; user text
+  never echoed. Rate limit: 5 signups/IP/rolling 60 min, in-memory deques,
+  injectable clock, IP = last `X-Forwarded-For` value else peer address.
+  Preflight becomes route-aware: auth routes allow `Authorization` in
+  `Access-Control-Allow-Headers` (GET+POST+OPTIONS per route); every auth
+  response carries the origin-echo ACAO header on the allowlist.
+  `POST /api/draft` behavior is UNCHANGED (no gating). Auth routes work with
+  `client=None` (degraded model path still signs users up). Logs:
+  method/path/status/counts only — never email, token, or password.
+- **Files:** `replydesk/api.py`, `app.py` (small edit), `tests/test_api_auth.py`.
+- **Acceptance:** Suite green offline (in-process server on an ephemeral loopback
+  port, stub client, temp-dir store): all four routes' matrices with verbatim
+  error-string assertions; 401 on bad/missing bearer; 409 duplicate; CORS echo on
+  success AND error responses; preflight for `/api/auth/*` allows `Authorization`;
+  `accounts=None` → auth 503 while `/api/health` stays 200; rate limit via the
+  injected clock (6th in-window signup → 429; window slide → allowed); signup →
+  login → me → logout round-trip against a fresh temp DB. No socket beyond
+  loopback; nothing reads `.env`. ACs: §3-AM, A9, A10.
+
+## T28 — deploy: named volume + `ACCOUNTS_DB` + repo hygiene (§13)
+
+- **Goal:** Per ARCHITECTURE §13: `deploy/compose.yaml` gains the named volume
+  `replydesk-api-data` mounted at `/app/data` and `environment:
+  ACCOUNTS_DB=/app/data/accounts.db` (env_file, healthcheck, unpublished port,
+  resource limits unchanged — additive edit only). `.gitignore` gains `data/`,
+  `*.db`, `*.db-wal`, `*.db-shm` (a local `--serve-api` run can never stage a
+  database). `.env.example` documents `ACCOUNTS_DB=data/accounts.db` (commented
+  default). `deploy/README.md` adds the volume note, the redeploy step
+  (`REF=<sha>` or `--no-cache`, per the existing layer-cache caveat), and the
+  post-deploy verification recipe: `/api/health` 200 → synthetic signup 201 →
+  me 200 → logout 204 with a clearly fictional account (the row may remain as a
+  harmless founding_trial user, or be removed via a one-off `docker compose
+  exec` snippet — either way, stated honestly).
+- **Files:** `deploy/compose.yaml`, `deploy/README.md`, `.gitignore`,
+  `.env.example`.
+- **Acceptance:** Suite green offline; file-level tests (T23 pattern): the
+  compose YAML parses and contains the volume + `ACCOUNTS_DB` env; `.gitignore`
+  covers the DB artifacts; `README` carries the redeploy + verification steps;
+  **no task step opens a network connection or touches the host** — deployment
+  is orchestrator-side remote work after acceptance. No `docs/` file changes
+  (additive rule). ACs: §3-AM, A9, A10.
+
+## T29 — SPA flips to server accounts + local→server migration — **DO NOT START**
+
+- **Status:** listed, not scheduled. Starts only on Michael's explicit go AFTER
+  the post is published (post integrity — standing rule 6; ARCHITECTURE §13).
+- **Outline (a fresh architect pass details it at that point):** `rd.js` auth
+  helpers gain async server variants against the `service.json` base URL
+  (signup/login/me/logout with `Authorization: Token`); the token persists the
+  session; **local→server migration on first login** — a browser holding a local
+  `rd_accounts` record migrates it to the server (same credentials; plan state
+  mapped: local `{plan:'founding', status:'trial', activated_on}` → server
+  defaults) and drops the local record only after the server confirms; the
+  sign-up honest copy is reworded to match reality; whether `/api/draft` becomes
+  session-gated is decided then, not precommitted.
