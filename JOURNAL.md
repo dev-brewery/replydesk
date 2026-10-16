@@ -398,6 +398,16 @@ Unblocked meanwhile: T02→T10 offline cadence proceeds regardless of any ruling
 - POST_DRAFT's "where it rubbed" rewritten honestly (friction + fixed-same-day) and the staged dev.to draft (id 4863272) updated via API PUT — verified by round-trip content check.
 - Publish ceremony tomorrow: owner opens the draft in his Chrome, optional title edit, clicks Publish; orchestrator runs the CHECKLIST post-publish verification.
 
+## 2026-10-16 (Fri, evening) — EXTERNAL REVIEW (Claude Code) + all findings fixed
+
+- The owner ordered an external review. Claude Code (installed on this box) reviewed the repo read-only against the challenge criteria — verdict **READY-WITH-FIXES** with 12 findings. The orchestrator independently confirmed the three criticals before fixing:
+  1. "Every commit carries the builder sign-off" was FALSE (24 of 49 commits lack the GLM trailer — confirmed by direct scan). POST_DRAFT reworded to the accurate claim: builder wrote every line of application code; trailers + JOURNAL.md record provenance including exceptions.
+  2. "Runs on my own hardware" contradicted the ruled endpoint (D3-A z.ai). POST_DRAFT now says: bridge+tunnel on my hardware, inference on z.ai serving GLM-5.3-Flash, self-hosting is the one-config-line capability openness buys.
+  3. The recorded demo labeled a kept-canned fallback as "model verified" — exactly what A5 forbids. R2 (committed): provenance map in canned_drafts.json; **live /demo/ now shows ty-2 as `Source: TEMPLATE · Verifier: NOT verified` with the "kept canned: model draft failed verification twice (A5 fallback)" note**; JSON carries source "template". Determinism holds.
+- Majors/minors fixed: README shipped (quickstart, links, tests, audit, agent-team note) + repo About/description/homepage set; the "10% off" anecdote replaced with the documented ty-3/ty-2 case; tunnel-offline honesty sentence in the Demo section; My Agent Session reworded (no implied DevRelay export; B2 remains a gap, allowed by cut order); "browser-local accounts" wording; payment-plan wording matched to the transcript; guidelines' owner-local timezone conversions removed; journal weekday drift corrected by appended note; final_audit extended to scan git HISTORY including commit messages (its new test caught and fixed a real hole).
+- Operational: a second quick tunnel started today (old-path artifact `docs/app/service.json` deleted; both tunnels healthy; Pages serves the original URL). POST_DRAFT updated on dev.to via API PUT — all seven truth-checks green. Suite 267 OK; final_audit PASS (now history-inclusive); remote = local at 5d21cee; README's existence closes the judge-landing gap.
+- Incident note: two shell commands echoed the GitHub token into the local transcript during a harness quoting failure; it remains only in .env (gitignored) and the local session log — never in any repo file or commit (guard active). Subsequent operations moved token handling into scripts reading .env directly.
+
 ## 2026-10-14 (Wed, PM) — T14a and T15 accepted; Thursday-ready
 
 - T14a (5268488): 15 dedicated assist tests over a recording stub; one flagged code fix accepted — multi-line assist output now malformed per §5's one-line contract (3-line change, tested). 139 tests green.

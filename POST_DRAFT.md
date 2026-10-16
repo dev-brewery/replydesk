@@ -1,6 +1,6 @@
 # POST — replydesk (DEV Hacktoberfest Week 2: "Side Hustle")
 
-Status: DRAFT (full body written 2026-10-15; screenshots pending Friday).
+Status: DRAFT (full body written; screenshots shot and owner-approved; external review fixes applied 2026-10-16).
 Title (owner picks at publish): **"My first user said 'yeah, absolutely': shipping a review-reply product in five days with an agent team"**
 Tags: `devchallenge`, `hf26challenge`.
 Account: dev.to/devbrewery. Repo: github.com/dev-brewery/replydesk.
@@ -18,13 +18,15 @@ template — re-verify exact headings in the DEV editor at publish (kit checklis
 
 The flow: sign up at **[replydeskhq.tech](https://replydeskhq.tech/)**, describe how you talk (the *tone guide*), paste in your reviews — and replydesk triages every one into **thank-you**, **fix-it**, or **needs-a-human**. Legal threats, safety claims, and refund disputes never get an auto-draft; they get a plain reason and a human. Everything else gets a reply drafted in the owner's voice by **GLM-5.3-Flash**, an open-weight model (MIT license), then run through a fact-grounding check that rejects any promise, price, name, or policy that doesn't trace back to the tone guide or the review itself. Fail twice and you get a clearly-labeled template instead of an invented fact. You edit, you copy, you post it to Google. Nothing is ever posted for you.
 
-Who pays: solo operators and small teams — the people for whom review-replying is real work but not a job. A founding member signed up this week at **$9/month** and asked where to send the payment.
+Who pays: solo operators and small teams — the people for whom review-replying is real work but not a job. A founding member signed up this week at **$9/month** — he said he'd pay and asked to set up a payment plan.
 
 ## Demo
 
 **Live product:** https://replydeskhq.tech/ — sign up, activate the founding trial (no card), paste reviews, draft replies.
 
 **Recorded offline run** (no key, no network — the same pipeline on committed fixtures): https://replydeskhq.tech/demo/
+
+Live drafting is served from my own machine through an accountless tunnel — if it's ever offline the product hands you clearly-labeled template drafts instead, and the recorded demo above is always up.
 
 ![replydesk workspace with verified drafts](https://raw.githubusercontent.com/dev-brewery/replydesk/main/docs/workspace.png?v=1)
 
@@ -36,15 +38,15 @@ Who pays: solo operators and small teams — the people for whom review-replying
 
 ## How I Built It
 
-The open-source core is **GLM-5.3-Flash** (open weights, MIT), called through any OpenAI-compatible endpoint — in the live demo it runs on my own hardware, published through an accountless tunnel. Because the weights are open, the whole product can run inside a business's four walls; reviews never have to leave.
+The open-source core is **GLM-5.3-Flash** (open weights, MIT), called through any OpenAI-compatible endpoint — in the live demo the drafting bridge runs on my own hardware behind an accountless tunnel, with inference served by GLM-5.3-Flash over an OpenAI-compatible API. Because the weights are open, pointing the whole product at self-hosted inference — reviews never leaving the building — is one config line, not a rewrite.
 
 Three deliberate design choices make it trustworthy enough to charge for:
 
 1. **Deterministic triage.** A rule table — not the model — decides what needs a human. The LLM can refine thank-you↔fix-it on a star-rating fall-through, but it has no vote on escalation. A model can't talk the app out of flagging a lawyer letter.
-2. **A fact-grounding verifier.** Every model draft is checked: numbers, names, and commitment phrases must trace to the tone guide, the review, or the business profile. Violations trigger one retry with the violations quoted back, then a labeled template fallback. When the model invented a "10% off" that nobody offered, the check caught it.
+2. **A fact-grounding verifier.** Every model draft is checked: numbers, names, and commitment phrases must trace to the tone guide, the review, or the business profile. Violations trigger one retry with the violations quoted back, then a labeled template fallback. During the live refresh of the recorded demo, one draft failed verification twice — and the run you can click into shows it flagged and replaced with a clearly-labeled template rather than an invented fact.
 3. **The tone guide is the product.** My first user's first draft was wordy — his words, "a fair amount of almost saying it twice." We added *"don't be too wordy, get to the point, always sign off with 'God bless'"* to his guide and re-drafted: the reply came back tight and signed off in his voice.
 
-The build itself was done by an **agent team**: an orchestrator (GLM-5.3, max thinking) briefing and verifying, an architect (GLM-5.3, high) designing, and a builder (GLM-5.3-flash, low) writing every line and every commit — every commit in the repo carries the builder's sign-off. The suite is **240+ tests, fully offline, network always mocked**. The session with my first user was transcribed locally with open-source whisper.
+The build itself was done by an **agent team**: an orchestrator (GLM-5.3, max thinking) briefing and verifying, an architect (GLM-5.3, high) designing, and a builder (GLM-5.3-flash, low) writing every line of application code. The suite is **240+ tests, fully offline, network always mocked**. The session with my first user was transcribed locally with open-source whisper.
 
 ## Why Does Open Innovation Matter?
 
@@ -52,7 +54,7 @@ Reviews are other people's personal data — names, complaints, bad days. A clos
 
 ## My Agent Session
 
-The entire repo was built by the agent team described above, one task per commit, every acceptance verified by the orchestrator before the next brief. The full decision log — every ruling, every caught defect, the honest post-mortems (including two sub-agent push hangs and a missing `__main__` that made the server a silent no-op) — ships in the repo as [`JOURNAL.md`](https://github.com/dev-brewery/replydesk/blob/main/JOURNAL.md), and every commit carries `Signed-off-by: GLM-5.3-flash (via pi)`.
+The entire repo was built by the agent team described above, one task per verified commit. The full decision log — every ruling, every caught defect, the honest post-mortems (two sub-agent push hangs, a missing `__main__` that made the server a silent no-op, a demo card mislabeled until an external review caught it) — ships in the repo as [`JOURNAL.md`](https://github.com/dev-brewery/replydesk/blob/main/JOURNAL.md); commits from builder sessions carry `Signed-off-by: GLM-5.3-flash (via pi)` trailers, and the exceptions (operational commits) are journaled there too.
 
 ## My First User
 
@@ -72,4 +74,4 @@ His identity stays private — he is "a local business owner" — and the voice 
 
 ## Prize Categories
 
-- **Best Use of a .tech Domain** — the product is live at **[replydeskhq.tech](https://replydeskhq.tech/)**, a .tech domain claimed through Hacktoberfest, serving the sign-up product itself (not a redirect): landing, accounts, founding-plan trial, and drafting.
+- **Best Use of a .tech Domain** — the product is live at **[replydeskhq.tech](https://replydeskhq.tech/)**, a .tech domain claimed through Hacktoberfest, serving the sign-up product itself (not a redirect): landing, browser-local accounts, founding-plan trial, and drafting.
