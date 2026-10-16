@@ -383,6 +383,13 @@ Unblocked meanwhile: T02→T10 offline cadence proceeds regardless of any ruling
 - Remaining human gates before publish: owner eyeballs the two PNGs; owner logs into dev.to in the driven Chrome (D10 — confirmed NOT logged in tonight); owner picks/keeps the title; failing-paste for the parser fix remains optional and pending.
 - Publish window: Sat 1 PM PDT target / 6 PM hard stop (D2-B).
 
+## 2026-10-16 (Fri) — D10 resolved via dev.to API; draft staged
+
+- Environment discovery: the owner works over SSH; the driven Chrome is headless/isolated (nothing can render on his RDP desktop — SSH-spawned GUI processes have no visible station). "Log in in that window" was impossible; withdrawn.
+- Fix: the owner minted a dev.to API key into `.env` (same convention as GITHUB_TOKEN; never through chat/repo). Verified read access, then staged the submission as an **unpublished draft via POST /api/articles** (first attempt 403 "Forbidden Bots" from urllib's default UA; retried with an identified User-Agent — lesson journaled).
+- **Draft live: id 4863272, published:false, tags [devchallenge, hf26challenge], full body from POST_DRAFT.md, temp-slug URL.** Tomorrow at the slot: the owner opens the draft in his own logged-in Chrome, reads it, optionally edits the title, and clicks Publish (his D2-B click). Post-publish verification per CHECKLIST (public API: published_at, tag_list, submission line, embed renders; live-page image naturalWidth>0; demo link; repo public).
+- Remaining owner-optional: failing Google paste for the parser fix — not blocking the post.
+
 ## 2026-10-14 (Wed, PM) — T14a and T15 accepted; Thursday-ready
 
 - T14a (5268488): 15 dedicated assist tests over a recording stub; one flagged code fix accepted — multi-line assist output now malformed per §5's one-line contract (3-line change, tested). 139 tests green.

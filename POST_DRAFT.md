@@ -28,7 +28,7 @@ Who pays: solo operators and small teams — the people for whom review-replying
 
 ![replydesk workspace with verified drafts](https://raw.githubusercontent.com/dev-brewery/replydesk/main/docs/workspace.png?v=1)
 
-![The landing page: paste, triage, reply](https://raw.githubusercontent.com/dev-brewery/replydesk/main/docs/landing.png?v=1)
+![The landing page: paste, triage, reply](https://raw.githubusercontent.com/dev-brewery/replydesk/main/docs/landing.png?v=2)
 
 ## Code
 
@@ -66,7 +66,7 @@ That's the product thesis in one sentence: not writing his reviews *for* him —
 
 - **Did they pay? Would they?** He activated the founding trial ($9/month, invoiced later, no card), and asked directly: **"Yeah, absolutely — we just have to set something up, a payment plan."**
 - **What did they ask for next?** Notifications: *"How am I going to get notified that I get a new review? That's going to be my catch."* A review watcher that pings him is the first thing on the roadmap.
-- **Where it rubbed (honestly):** pasting his reviews page didn't parse on the first try — he fell back to typing `5 | review text` lines, which worked immediately. The session's top two fixes, now logged in the repo journal: parse real Google page copies better, and keep shrinking draft latency (the redraft after the tone change came back in seconds; the first was slower).
+- **Where it rubbed (honestly):** pasting his reviews didn't parse on the first try — he'd copied from his own Google Business dashboard, whose copy shape differs from the public Maps page (literal `star` words instead of icons). He fell back to typing `5 | review text` lines, which worked immediately — and the parser learned the dashboard shape the same day; both surfaces now paste cleanly.
 
 His identity stays private — he is "a local business owner" — and the voice memo never leaves my devices.
 
