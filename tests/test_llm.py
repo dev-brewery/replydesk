@@ -208,6 +208,20 @@ class LoadEnvConfigTests(unittest.TestCase):
                                "LLM_MODEL": "env-model",
                                "LLM_API_KEY": "file-key"})
 
+    def test_environ_only_file_absent(self):
+        path = os.path.join(tempfile.gettempdir(), "no-such-file-does-not-exist.env")
+        env = {"LLM_BASE_URL": "https://env.example/v1", "LLM_MODEL": "env-model",
+               "LLM_API_KEY": "env-key"}
+        with mock.patch.dict(os.environ, env, clear=False):
+            cfg = load_env_config(path)
+        self.assertEqual(cfg, env)
+
+    def test_environ_file_absent_missing_key_stays_missing(self):
+        path = os.path.join(tempfile.gettempdir(), "no-such-file-does-not-exist.env")
+        with mock.patch.dict(os.environ, {"LLM_MODEL": "env-model"}, clear=False):
+            cfg = load_env_config(path)
+        self.assertEqual(cfg, {"LLM_MODEL": "env-model"})
+
     def test_environ_wins_over_file(self):
         path = self._write("LLM_BASE_URL=https://file.example/v1\n"
                            "LLM_MODEL=file-model\n")

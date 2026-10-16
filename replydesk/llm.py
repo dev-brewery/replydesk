@@ -105,22 +105,29 @@ def load_env_config(env_path: str) -> dict:
     Recognizes LLM_BASE_URL, LLM_MODEL, LLM_API_KEY. Quoted values are unquoted.
     Values already present in os.environ win: container platforms inject env
     vars, and the file only supplements missing keys (local .env keeps working
-    unchanged when the variables are not exported). Only online mode calls this.
+    unchanged when the variables are not exported). A missing or unreadable
+    file is tolerated: the config is built from os.environ alone. Only online
+    mode calls this.
     """
     wanted = ("LLM_BASE_URL", "LLM_MODEL", "LLM_API_KEY")
     config: dict = {}
-    with open(env_path, "r", encoding="utf-8") as fh:
-        for raw in fh:
-            line = raw.strip()
-            if not line or line.startswith("#"):
-                continue
-            if "=" not in line:
-                continue
-            name, _, value = line.partition("=")
-            name = name.strip()
-            value = value.strip().strip('"').strip("'")
-            if name in wanted and value != "":
-                config[name] = value
+    try:
+        fh = open(env_path, "r", encoding="utf-8")
+    except OSError:
+        fh = None
+    if fh is not None:
+        with fh:
+            for raw in fh:
+                line = raw.strip()
+                if not line or line.startswith("#"):
+                    continue
+                if "=" not in line:
+                    continue
+                name, _, value = line.partition("=")
+                name = name.strip()
+                value = value.strip().strip('"').strip("'")
+                if name in wanted and value != "":
+                    config[name] = value
     for name in wanted:
         env_value = os.environ.get(name)
         if env_value:

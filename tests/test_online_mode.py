@@ -100,11 +100,14 @@ class OnlineClientConfigTests(unittest.TestCase):
         self.assertIsInstance(client, HttpLLM)
 
     def test_missing_env_degrades(self):
+        # A missing file is tolerated: environ supplies what it can, and any
+        # keys still absent flow into the missing-values degradation path.
         client, degraded = app.online_client(
             os.path.join(tempfile.gettempdir(), "no-such-env-file")
         )
         self.assertIsNone(client)
-        self.assertIn("could not read", degraded)
+        self.assertIn("is missing", degraded)
+        self.assertIn("LLM_BASE_URL", degraded)
 
     def test_missing_required_values_degrade(self):
         path = self._env_file(_fake_env_text(base_url=""))
