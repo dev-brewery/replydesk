@@ -390,6 +390,14 @@ Unblocked meanwhile: T02→T10 offline cadence proceeds regardless of any ruling
 - **Draft live: id 4863272, published:false, tags [devchallenge, hf26challenge], full body from POST_DRAFT.md, temp-slug URL.** Tomorrow at the slot: the owner opens the draft in his own logged-in Chrome, reads it, optionally edits the title, and clicks Publish (his D2-B click). Post-publish verification per CHECKLIST (public API: published_at, tag_list, submission line, embed renders; live-page image naturalWidth>0; demo link; repo public).
 - Remaining owner-optional: failing Google paste for the parser fix — not blocking the post.
 
+## 2026-10-16 (Fri, afternoon) — the real failing paste supplied; parser fixed, live, and the post updated
+
+- The owner pasted the real failing copy into gitignored `out/failing-paste.txt`. Root cause: it came from the **Google Business Profile manager view** (the owner's own dashboard) — a completely different copy shape from the public Maps panel: stars as literal `star` words (five standalone lines in the summary; `starstarstarstarstar` concatenated per review + absolute date), `open_in_new` icon ligature fused to names, `All/Replied/Unreplied` tab noise. Both parsers returned 0 on it — the first-user friction now fully explained.
+- T25 (committed + pushed, 256 tests green): star-word rating anchors, dashboard noise tokens, `open_in_new` stripping, absolute-date scaffolding — in BOTH `paste_parse.py` and the JS port; `/help` gained the business-dashboard path; SPA bumped `?v=7`.
+- Orchestrator verified against the REAL paste (locally, never committed): Python and JS both → 1 review, 5★, correct text. And against the LIVE-SERVED rd.js with a synthetic shape-equivalent: same result — **the hosted app now parses the surface an actual business owner copies from.**
+- POST_DRAFT's "where it rubbed" rewritten honestly (friction + fixed-same-day) and the staged dev.to draft (id 4863272) updated via API PUT — verified by round-trip content check.
+- Publish ceremony tomorrow: owner opens the draft in his Chrome, optional title edit, clicks Publish; orchestrator runs the CHECKLIST post-publish verification.
+
 ## 2026-10-14 (Wed, PM) — T14a and T15 accepted; Thursday-ready
 
 - T14a (5268488): 15 dedicated assist tests over a recording stub; one flagged code fix accepted — multi-line assist output now malformed per §5's one-line contract (3-line change, tested). 139 tests green.
