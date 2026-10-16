@@ -65,6 +65,75 @@ Devon K.
 Updated review: still a solid latte, though the line moves slowly at 8am.
 """
 
+MANAGER_VIEW_ONE = """\
+Reviews
+5.0
+star
+star
+star
+star
+star
+(
+1 review
+)
+
+All
+
+Replied
+
+Unreplied
+
+Jordan Blakeopen_in_new
+Local Guide \u00b7 22 reviews \u00b7 17 photos
+starstarstarstarstar Sep 19, 2024
+Great service and quick turnaround!
+"""
+
+MANAGER_VIEW_TWO = """\
+Reviews
+5.0
+star
+star
+star
+star
+star
+(
+2 reviews
+)
+
+All
+Replied
+Unreplied
+
+Jordan Blakeopen_in_new
+Local Guide \u00b7 4 reviews \u00b7 2 photos
+starstarstarstarstar Sep 19, 2024
+Great service and quick turnaround!
+
+Casey Kimopen_in_new
+Local Guide \u00b7 9 reviews
+starstarstar Oct 2, 2024
+Waited twenty minutes and the order was wrong.
+"""
+
+MANAGER_VIEW_SUMMARY_ONLY = """\
+Reviews
+5.0
+star
+star
+star
+star
+star
+(
+0 reviews
+)
+
+All
+Replied
+Unreplied
+"""
+
+
 # Driver: reads JSON cases from stdin, runs rd.parsePaste on each, prints
 # JSON results. Keeps the JS-side logic minimal; assertions live in Python.
 DRIVER_JS = """\
@@ -125,6 +194,10 @@ PORT_CASES = [
     ("pua-filler-only", "\ue8dc\ue80d\ue5d4\ue88e\njust decoration text"),
     ("pua-reviews-photos-meta",
      "Jordyn Ellis\n12 reviews \u00b7 3 photos\n\ue838\ue838\ue838\ue838\ue838\n2 days ago\nThe cortado is great."),
+    ("manager-one", MANAGER_VIEW_ONE),
+    ("manager-two", MANAGER_VIEW_TWO),
+    ("manager-summary-only", MANAGER_VIEW_SUMMARY_ONLY),
+    ("manager-star-word-no-date", "Sam Reyes\nstarstarstarstar\nLoved the pastries."),
 ]
 
 R = lambda sid, stars, text: {"review_id": sid, "stars": stars, "text": text}
@@ -148,6 +221,11 @@ EXPECTED = [
     [R("p1", 4, "Quiet patio.")],
     [],
     [R("p1", 5, "The cortado is great.")],
+    [R("p1", 5, "Great service and quick turnaround!")],
+    [R("p1", 5, "Great service and quick turnaround!"),
+     R("p2", 3, "Waited twenty minutes and the order was wrong.")],
+    [],
+    [R("p1", 4, "Loved the pastries.")],
 ]
 
 

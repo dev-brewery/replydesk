@@ -71,6 +71,21 @@ _GLYPH_RUN_RE = re.compile(
 )
 _HALF_STAR_RE = re.compile(r"[½\u00bd]")
 
+# Google Business Profile manager view: the star row is the literal word
+# 'star' repeated 1-5 times (concatenated or whitespace-separated), optionally
+# followed by an absolute calendar date on the same line ('starstarstarstarstar
+# Sep 19, 2024'). The date is scaffolding, not review text.
+_STAR_WORD_RE = re.compile(
+    r"^(?:star[\s]*){1,5}"
+    r"(?:(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+"
+    r"\d{1,2}(?:,?\s*\d{4})?|\d{1,2}/\d{1,2}/\d{2,4})?$",
+    re.IGNORECASE,
+)
+
+# Icon ligature that fuses to a reviewer name in the manager copy
+# ('Jonathan Blankopen_in_new').
+_OPEN_IN_NEW_RE = re.compile(r"open_in_new\s*$")
+
 # Conservative numeric forms: '4/5', '4 out of 5', 'Rated 4/5'. Whole numbers
 # only, out of 5, so a score like '4.6' or '84/100' never anchors a segment.
 _NUMERIC_ANCHOR_RE = re.compile(
@@ -107,6 +122,10 @@ _NOISE_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("count", re.compile(r"^\d+[+\s]*(friends?|reviews?|photos?|contributions?|followers?)\b", re.I)),
     ("badge", re.compile(r"^\d+\s+(years?|months?)\s+on\s+(google|yelp)\b", re.I)),
     ("local-guide", re.compile(r"^(local\s+guide|\u00b7|\|)+", re.I)),
+    # Business-profile manager view UI: header, summary rating, filter tabs,
+    # bare parens around the review count.
+    ("summary-rating", re.compile(r"^\d\.\d$")),
+    ("gbp-ui", re.compile(r"^(reviews?|all|replied|unreplied|[()])$", re.I)),
 )
 
 
@@ -116,6 +135,8 @@ def _is_noise(line: str) -> bool:
 
 def _anchor_stars(line: str) -> int | None:
     """Stars if the line anchors a segment, else None. Halves floor down."""
+    if _STAR_WORD_RE.match(line):
+        return max(1, min(5, len(re.findall(r"star", line, re.IGNORECASE))))
     if _GLYPH_RUN_RE.match(line):
         full = sum(line.count(ch) for ch in _FULL_STAR_CHARS)
         if full:
@@ -129,7 +150,7 @@ def _anchor_stars(line: str) -> int | None:
 
 def _is_scaffolding(line: str) -> bool:
     """Date or reviewer-name lines, recognized then dropped."""
-    line = line.strip()
+    line = _OPEN_IN_NEW_RE.sub("", line.strip()).strip()
     if _DATE_RE.match(line) or _CALENDAR_DATE_RE.match(line):
         return True
     return bool(len(line) <= 40 and _NAME_RE.match(line))

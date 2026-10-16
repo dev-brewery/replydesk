@@ -21,6 +21,13 @@
   var NAME_RE = /^(?:[A-Z][\w'.-]*\s+){1,3}[A-Z][\w'.-]*$/;
   var CALENDAR_DATE_RE = /^(?:(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{1,2}(?:,?\s*\d{4})?|\d{1,2}\/\d{1,2}\/\d{2,4})$/i;
   var MANUAL_FIRST_RE = /^\s*[1-9]\d*\s*\|/;
+  // Google Business Profile manager view: star-word row (the literal word
+  // 'star' 1-5 times), optionally followed by an absolute date on the line.
+  var STAR_WORD_RE = new RegExp(
+    '^(?:star[\\s]*){1,5}' +
+    '(?:(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\\.?\\s+' +
+    '\\d{1,2}(?:,?\\s*\\d{4})?|\\d{1,2}\\/\\d{1,2}\\/\\d{2,4})?$', 'i');
+  var OPEN_IN_NEW_RE = /open_in_new\s*$/;
 
   var NOISE_PATTERNS = [
     /response\s+from\s+(the\s+)?(owner|business)|owner\s+responded/i,
@@ -29,7 +36,9 @@
     /^elite\s+\d{4}$/i,
     /^\d+[+\s]*(friends?|reviews?|photos?|contributions?|followers?)\b/i,
     /^\d+\s+(years?|months?)\s+on\s+(google|yelp)\b/i,
-    /^(local\s+guide|\u00b7|\|)+/i
+    /^(local\s+guide|\u00b7|\|)+/i,
+    /^\d\.\d$/,
+    /^(reviews?|all|replied|unreplied|[()])$/i
   ];
 
   // --- helpers --------------------------------------------------------------
@@ -38,6 +47,9 @@
   }
 
   function anchorStars(line) {
+    if (STAR_WORD_RE.test(line)) {
+      return Math.max(1, Math.min(5, (line.match(/star/gi) || []).length));
+    }
     if (GLYPH_RUN_RE.test(line)) {
       var full = 0;
       FULL_STAR_CHARS.forEach(function (ch) {
@@ -51,7 +63,7 @@
   }
 
   function isScaffolding(line) {
-    line = line.trim();
+    line = line.replace(OPEN_IN_NEW_RE, '').trim();
     if (DATE_RE.test(line) || CALENDAR_DATE_RE.test(line)) return true;
     return line.length <= 40 && NAME_RE.test(line);
   }

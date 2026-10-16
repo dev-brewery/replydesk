@@ -225,6 +225,118 @@ class GooglePrivateUseStarTests(unittest.TestCase):
                 self.assertEqual("The cortado is great.", reviews[0].text)
 
 
+# Synthetic manager-view shape (T25): literal word 'star' rows, fused icon
+# ligature, owner's own dashboard chrome.
+MANAGER_VIEW_ONE = """Reviews
+5.0
+star
+star
+star
+star
+star
+(
+1 review
+)
+
+All
+
+Replied
+
+Unreplied
+
+Jordan Blakeopen_in_new
+Local Guide · 22 reviews · 17 photos
+starstarstarstarstar Sep 19, 2024
+Great service and quick turnaround! 😀
+"""
+
+MANAGER_VIEW_TWO = """Reviews
+5.0
+star
+star
+star
+star
+star
+(
+2 reviews
+)
+
+All
+Replied
+Unreplied
+
+Jordan Blakeopen_in_new
+Local Guide · 4 reviews · 2 photos
+starstarstarstarstar Sep 19, 2024
+Great service and quick turnaround!
+
+Casey Kimopen_in_new
+Local Guide · 9 reviews
+starstarstar Oct 2, 2024
+Waited twenty minutes and the order was wrong.
+"""
+
+MANAGER_VIEW_SUMMARY_ONLY = """Reviews
+5.0
+star
+star
+star
+star
+star
+(
+0 reviews
+)
+
+All
+Replied
+Unreplied
+"""
+
+
+class ManagerViewTests(unittest.TestCase):
+    """T25: Google Business Profile manager copy (synthetic, A10-safe)."""
+
+    def test_one_review_manager_shape(self):
+        reviews = parse_paste(MANAGER_VIEW_ONE)
+        self.assertEqual(1, len(reviews))
+        self.assertEqual(5, reviews[0].stars)
+        self.assertEqual("Great service and quick turnaround! 😀",
+                         reviews[0].text)
+        self.assertNotIn("Sep 19, 2024", reviews[0].text)
+
+    def test_three_star_variant(self):
+        reviews = parse_paste(
+            "Casey Kimopen_in_new\nLocal Guide · 9 reviews\n"
+            "starstarstar Oct 2, 2024\nWaited twenty minutes and the order was wrong.")
+        self.assertEqual([3], [r.stars for r in reviews])
+        self.assertEqual("Waited twenty minutes and the order was wrong.",
+                         reviews[0].text)
+
+    def test_two_reviews_back_to_back(self):
+        reviews = parse_paste(MANAGER_VIEW_TWO)
+        self.assertEqual(
+            [(5, "Great service and quick turnaround!"),
+             (3, "Waited twenty minutes and the order was wrong.")],
+            [(r.stars, r.text) for r in reviews],
+        )
+
+    def test_summary_block_only_yields_nothing(self):
+        self.assertEqual([], parse_paste(MANAGER_VIEW_SUMMARY_ONLY))
+
+    def test_star_word_line_without_date_anchors(self):
+        reviews = parse_paste("Sam Reyes\nstarstarstarstar\nLoved the pastries.")
+        self.assertEqual([4], [r.stars for r in reviews])
+
+    def test_maps_shape_still_parses(self):
+        reviews = parse_paste(GOOGLE_DUMP)
+        self.assertEqual(3, len(reviews))
+        self.assertEqual([5, 3, 4], [r.stars for r in reviews])
+
+    def test_manual_lines_still_parse(self):
+        reviews = parse_paste("5 | great coffee\n2 | my order was cold")
+        self.assertEqual(2, len(reviews))
+
+
 class AppReexportTests(unittest.TestCase):
     def test_app_reexports_all_three_names(self):
         import app
