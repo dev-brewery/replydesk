@@ -11,11 +11,13 @@ FROM python:3.12-slim
 ARG REPO
 ARG REF
 
-ADD ${REPO}/archive/${REF}.tar.gz /tmp
-
 WORKDIR /app
-RUN cp -r /tmp/replydesk-${REF}/replydesk /tmp/replydesk-${REF}/app.py ./ \
-    && rm -rf /tmp/replydesk-${REF}
+# Remote ADD does not auto-extract, so fetch + extract in one RUN
+# (python and tar are guaranteed in python:3.12-slim).
+RUN python -c "import urllib.request; urllib.request.urlretrieve('$REPO/archive/$REF.tar.gz', '/tmp/rd.tgz')" \
+    && tar -xzf /tmp/rd.tgz -C /tmp \
+    && cp -r /tmp/replydesk-${REF}/replydesk /tmp/replydesk-${REF}/app.py ./ \
+    && rm -rf /tmp/replydesk-${REF} /tmp/rd.tgz
 
 # No .env is copied into the image; compose's env_file injects it at runtime.
 EXPOSE 8010
