@@ -40,3 +40,10 @@ The Pages rebuild plus ~10 minutes of edge cache lag means the flipped
    `{"status": "unavailable", "url": null}` if it wasn't flipped already.
 3. Commit + push the flipped `service.json` so the hosted app shows the
    honest offline state again.
+
+## Judging window
+
+The bridge + quick tunnel stay up through the winners announcement (week of
+Oct 19). If the box reboots: re-run `tools/run_tunnel.ps1` (or
+`tools/run_tunnel.sh`), then the builder re-commits the flipped
+`docs/service.json` and the orchestrator pushes so the Pages copy updates.
