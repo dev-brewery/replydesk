@@ -6,7 +6,9 @@
 2. Privacy scan: every tracked file is matched against the privacy
    patterns (`.privacy-patterns` if present locally, else
    `.privacy-patterns.example`; one case-insensitive regex per line,
-   `#` comments stripped). Any hit exits non-zero (A10).
+   `#` comments stripped), then the same patterns are scanned across
+   the full git history (`git grep` over `git rev-list --all`). Any
+   hit — working tree or history — exits non-zero (A10).
 3. Prints a one-page MUST checklist summary (D1-D6, A1-A11, B1), reading
    status markers from IMPLEMENTATIONPLAN.md tracker rows where
    parseable, else listed as manual-check.
@@ -101,6 +103,42 @@ def scan_files(patterns: list[str], files: list[Path], repo: Path = REPO
     return hits
 
 
+def scan_history(patterns: list[str], repo: Path = REPO) -> dict[str, list[str]]:
+    """Scan every commit's tree AND commit message for pattern hits
+    (A10 history leg).
+
+    Returns {short-rev: [pattern, ...]}. Line contents are never
+    reported — only which pattern hit in which commit.
+    """
+    if not patterns:
+        return {}
+    revs = subprocess.run(
+        ["git", "-C", str(repo), "rev-list", "--all"],
+        capture_output=True, check=True,
+    ).stdout
+    hits: dict[str, list[str]] = {}
+    for rev in revs.split():
+        short = rev.decode()[:12]
+        for pat in patterns:
+            proc = subprocess.run(
+                ["git", "-C", str(repo), "grep", "-I", "-E", "-i",
+                 "-e", pat, rev],
+                capture_output=True,
+            )
+            if proc.returncode == 0:
+                hits.setdefault(short, []).append(pat)
+                continue
+        msg = subprocess.run(
+            ["git", "-C", str(repo), "log", "-1", "--format=%B", rev],
+            capture_output=True, check=True,
+        ).stdout.decode("utf-8", "replace")
+        msg_hits = [p for p in patterns
+                    if re.search(p, msg, re.IGNORECASE | re.MULTILINE)]
+        if msg_hits:
+            hits.setdefault(short, []).extend(msg_hits)
+    return hits
+
+
 def tracker_statuses(plan_text: str) -> dict[str, str]:
     """Parse tracker rows: task id in first cell, status mark in a cell."""
     statuses = {}
@@ -171,6 +209,17 @@ def main() -> int:
                 print(f"  {f}: /{p}/")
     else:
         print("[privacy scan] clean")
+
+    # 2b. git-history scan (same patterns across all commits)
+    hhits = scan_history(patterns)
+    if hhits:
+        fail = True
+        print("FAIL: privacy pattern hits in git history:")
+        for rev, found in sorted(hhits.items()):
+            for p in found:
+                print(f"  {rev}: /{p}/")
+    else:
+        print("[history scan] clean")
 
     # 3. checklist summary
     print(checklist_summary(REPO / "IMPLEMENTATIONPLAN.md"))

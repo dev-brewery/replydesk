@@ -3,6 +3,7 @@
 All patterns and planted text here are synthetic; no real pattern
 values are reproduced.
 """
+import subprocess
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -51,6 +52,46 @@ class TestPatternScanner(unittest.TestCase):
 
     def test_missing_pattern_file_means_no_patterns(self):
         self.assertEqual(final_audit.load_patterns(self.dir / "nope"), [])
+
+
+class TestHistoryScan(unittest.TestCase):
+    """History leg runs against a synthetic temp git repo."""
+
+    def setUp(self):
+        self.tmp = TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.dir = Path(self.tmp.name)
+        self.git("init", "-q")
+
+    def git(self, *args):
+        identity = ["-c", "user.name=test", "-c",
+                    "user.email=test@example.invalid"]
+        subprocess.run(["git", "-C", str(self.dir), *identity, *args],
+                       check=True, capture_output=True)
+
+    def commit(self, name: str, text: str):
+        (self.dir / name).write_text(text, encoding="utf-8")
+        self.git("add", name)
+        self.git("commit", "-q", "-m", f"add {name}")
+
+    def test_planted_commit_detected(self):
+        self.commit("leak.txt", "harmless line\nplanted pattern here\n")
+        hits = final_audit.scan_history(["planted.pattern"], self.dir)
+        self.assertEqual(len(hits), 1)
+        self.assertEqual(hits[list(hits)[0]], ["planted.pattern"])
+
+    def test_clean_history_clean(self):
+        self.commit("clean.txt", "Ridgeline Plumbing, Cedar Falls.\n")
+        self.assertEqual(
+            final_audit.scan_history(["planted.pattern"], self.dir), {})
+
+    def test_no_patterns_means_no_scan(self):
+        self.assertEqual(final_audit.scan_history([], self.dir), {})
+
+    def test_commit_message_hit_detected(self):
+        self.git("commit", "-q", "--allow-empty", "-m", "planted pattern")
+        hits = final_audit.scan_history(["planted.pattern"], self.dir)
+        self.assertEqual(len(hits), 1)
 
 
 if __name__ == "__main__":
