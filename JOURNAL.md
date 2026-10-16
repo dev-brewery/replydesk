@@ -421,3 +421,11 @@ Three earlier headers carry weekday labels off by one (machine clock drift):
 2026-10-14 is Wednesday, 2026-10-15 is Thursday, 2026-10-16 is Friday; one
 entry also landed out of chronological order in this file. The canonical
 timeline is the STATE lines in IMPLEMENTATIONPLAN.md.
+
+## 2026-10-16 (Fri, late) — CUTOVER COMPLETE: live drafting served from the Oracle A1
+
+- The owner added the A record (api → VM). First ACME attempts raced DNS propagation (NXDOMAIN at challenge time; Caddy backed off exponentially) — a Caddy restart after DNS settled obtained the cert: https://api.replydeskhq.tech/api/health → {"ok": true}.
+- Two more real defects found and fixed on the path (builder commits, tested): the container has no .env by design, but load_env_config raised on the missing FILE before consulting os.environ (the environ-only test had never deleted the file) — now builds from environ alone when the file is absent (a3a1cb9). Docker layer-cache staleness on the tarball-fetch RUN is documented in deploy/README (--no-cache or REF=sha for content refreshes).
+- Final proof: real draft through the public URL — HTTP 200 in 15.1 s, model_retry + verified, proper reply text — faster than the original host.
+- Cutover executed: docs/service.json → live at https://api.replydeskhq.tech (2c7da39, pushed); Pages edge verified serving it; both quick tunnels on this box terminated; the local bridge remains as an unreferenced cold fallback. This box is OUT of the live request path: browser → GitHub Pages → api.replydeskhq.tech (Caddy, TLS) → container → z.ai.
+- Suite: 276 tests OK. Publish window tomorrow 1 PM PDT target / 6 PM hard stop.
