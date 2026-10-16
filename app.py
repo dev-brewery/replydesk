@@ -12,7 +12,9 @@ Stdlib ``http.server`` bound to the loopback address. Modes:
 
 import argparse
 import http.server
+import os
 import re
+import threading
 import urllib.parse
 from http import HTTPStatus
 
@@ -26,6 +28,33 @@ from replydesk.triage import triage_all
 
 DEFAULT_HOST = "127.0.0.1"  # loopback only; never a real hostname
 DEFAULT_PORT = 8000
+DEFAULT_ACCOUNTS_DB = "data/accounts.db"
+
+
+class LazyAccountStore:
+    """AccountStore built on the first auth request, not at startup (§13).
+
+    The path comes from the ACCOUNTS_DB environment variable only (never
+    ``load_env_config`` — the container carries no .env file by design,
+    lesson a3a1cb9). A server that never receives an auth request never
+    touches the filesystem; the store creates a missing directory itself.
+    """
+
+    def __init__(self, path: str) -> None:
+        self._path = path
+        self._store = None
+        self._lock = threading.Lock()
+
+    def _get(self):
+        with self._lock:
+            if self._store is None:
+                from replydesk.accounts import AccountStore
+
+                self._store = AccountStore(self._path)
+            return self._store
+
+    def __getattr__(self, name):
+        return getattr(self._get(), name)
 
 VOICE_PLACEHOLDER = "# Voice\nHow I talk to customers...\n\n# Facts I'll stand behind\n- we open at 7am"
 REVIEWS_PLACEHOLDER = "5 | best coffee on the block\n2 | my order was cold"
@@ -331,7 +360,10 @@ def main(argv=None) -> None:
         else:
             print(f"api mode: online client unavailable ({degraded}); "
                   "every /api/draft will answer 503")
-        httpd = make_api_server(args.host, args.port, client)
+        # §13: ACCOUNTS_DB from the environment only — never load_env_config.
+        accounts = LazyAccountStore(
+            os.environ.get("ACCOUNTS_DB", DEFAULT_ACCOUNTS_DB))
+        httpd = make_api_server(args.host, args.port, client, accounts=accounts)
         print(f"replydesk api listening on http://{args.host}:{args.port}/")
         try:
             httpd.serve_forever()

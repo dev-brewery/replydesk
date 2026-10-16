@@ -17,15 +17,32 @@ serialized run. Stdlib only, loopback bind (the tunnel reaches it locally).
 import http.server
 import json
 import re
+import time
+from collections import deque
 from http import HTTPStatus
 
+from replydesk.accounts import DuplicateEmailError, user_json
 from replydesk.draft import run as run_pipeline
 from replydesk.model import BusinessProfile, Review
 from replydesk.toneguide import ToneGuideError, parse_tone_guide
 
 # One auditable table per ARCHITECTURE §2.
 CAPS = {"MAX_BODY_BYTES": 262_144, "MAX_TONE_CHARS": 4_000, "MAX_REVIEWS": 20,
-        "MAX_REVIEW_CHARS": 2_000, "MAX_PROFILE_CHARS": 60}
+        "MAX_REVIEW_CHARS": 2_000, "MAX_PROFILE_CHARS": 60,
+        "MAX_NAME_CHARS": 60, "MAX_EMAIL_CHARS": 254, "MAX_PASSWORD_CHARS": 1024}
+
+# Signup rate limit (§13): 5 per IP per rolling 60-minute window, in-memory.
+SIGNUP_RATE_LIMIT = 5
+SIGNUP_WINDOW_SECONDS = 3600.0
+
+# The SPA's email shape regex (docs/rd.js), mirrored server-side so both
+# sides reject the same addresses with the same words.
+_EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
+
+
+def rate_clock() -> float:
+    """Injectable monotonic clock for the signup rate limiter (tests monkeypatch)."""
+    return time.monotonic()
 
 # Browser-facing allowlist only (CORS constrains browsers, not scripts). The
 # Pages fallback origin hosts the same SPA; loopback covers local verification.
@@ -202,8 +219,197 @@ def profile_date():
 
 class _ApiHandler(http.server.BaseHTTPRequestHandler):
     # Set by make_api_server; None means the online client could not be built
-    # and every /api/draft answers 503.
+    # and every /api/draft answers 503. Auth routes degrade the same way when
+    # the accounts store is None.
     client = None
+    accounts = None
+    # Per-server signup rate-limit state ({ip: deque[timestamps]}); reset on
+    # restart by design (§13).
+    signup_attempts = {}
+
+    # -- auth helpers -------------------------------------------------------
+
+    def _bearer_token(self) -> str | None:
+        """Parse ``Authorization: Token <t>`` (scheme case-insensitive)."""
+        header = self.headers.get("Authorization") or ""
+        parts = header.split(None, 1)
+        if len(parts) != 2 or parts[0].lower() != "token":
+            return None
+        token = parts[1].strip()
+        if not token or len(token) > 64:
+            return None
+        return token
+
+    def _client_ip(self) -> str:
+        # Last X-Forwarded-For value: Caddy appends the address it observed,
+        # and only Caddy can reach the unpublished container port (§13).
+        xff = self.headers.get("X-Forwarded-For")
+        if xff:
+            last = xff.split(",")[-1].strip()
+            if last:
+                return last
+        return str(self.client_address[0])
+
+    def _signup_rate_limited(self, ip: str) -> bool:
+        attempts = type(self).signup_attempts
+        cutoff = rate_clock() - SIGNUP_WINDOW_SECONDS
+        seen = attempts.get(ip)
+        if seen is None:
+            seen = attempts[ip] = deque()
+        while seen and seen[0] <= cutoff:
+            seen.popleft()
+        if len(seen) >= SIGNUP_RATE_LIMIT:
+            return True
+        seen.append(rate_clock())
+        return False
+
+    def _send_empty(self, status: HTTPStatus,
+                    *, cors_origin: str | None = None) -> None:
+        self.send_response(status)
+        if cors_origin:
+            self.send_header("Access-Control-Allow-Origin", cors_origin)
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
+    def _auth_error(self, status: HTTPStatus, message: str, origin) -> None:
+        self._send_json(status, json.dumps({"error": message}) + "\n",
+                        cors_origin=origin)
+        self._log(status)
+
+    def _require_account_store(self, origin):
+        if self.accounts is None:
+            # Drain the small auth body so the client can read the 503
+            # instead of hitting a reset mid-upload.
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+            except ValueError:
+                length = 0
+            if 0 < length <= 10 * CAPS["MAX_BODY_BYTES"]:
+                while length > 0:
+                    chunk = self.rfile.read(min(length, 65536))
+                    if not chunk:
+                        break
+                    length -= len(chunk)
+            self._auth_error(HTTPStatus.SERVICE_UNAVAILABLE,
+                             "service unavailable", origin)
+            return None
+        return self.accounts
+
+    def _auth_json_body(self, origin):
+        """Read and parse one auth POST body, or send the error and return None."""
+        try:
+            length = int(self.headers.get("Content-Length", "0"))
+        except ValueError:
+            self._auth_error(HTTPStatus.BAD_REQUEST, "invalid Content-Length",
+                             origin)
+            return None
+        if length > CAPS["MAX_BODY_BYTES"]:
+            self.close_connection = True
+            self._auth_error(HTTPStatus.REQUEST_ENTITY_TOO_LARGE,
+                             _caps_error("MAX_BODY_BYTES"), origin)
+            return None
+        body = self.rfile.read(length) if length else b""
+        try:
+            payload = json.loads(body.decode("utf-8"))
+        except (UnicodeDecodeError, ValueError):
+            self._auth_error(HTTPStatus.BAD_REQUEST, "malformed JSON", origin)
+            return None
+        if not isinstance(payload, dict):
+            self._auth_error(HTTPStatus.BAD_REQUEST, "body must be a JSON object",
+                             origin)
+            return None
+        return payload
+
+    def _handle_auth_post(self, origin) -> None:
+        if self.path == "/api/auth/signup":
+            self._auth_signup(origin)
+        elif self.path == "/api/auth/login":
+            self._auth_login(origin)
+        elif self.path == "/api/auth/logout":
+            self._auth_logout(origin)
+        else:
+            self._auth_error(HTTPStatus.NOT_FOUND, "not found", origin)
+
+    def _auth_signup(self, origin) -> None:
+        accounts = self._require_account_store(origin)
+        if accounts is None:
+            return
+        ip = self._client_ip()
+        if self._signup_rate_limited(ip):
+            self._auth_error(
+                HTTPStatus.TOO_MANY_REQUESTS,
+                "Too many sign-ups from this address. Try again later.", origin)
+            return
+        payload = self._auth_json_body(origin)
+        if payload is None:
+            return
+        try:
+            name, email, password = _validate_signup(payload)
+            user = accounts.create_user(name, email, password)
+        except _RequestError as exc:
+            self._auth_error(exc.status, exc.message, origin)
+            return
+        except DuplicateEmailError as exc:
+            self._auth_error(HTTPStatus.CONFLICT, str(exc), origin)
+            return
+        token = accounts.issue_session(user.id)
+        self._send_json(HTTPStatus.CREATED,
+                        json.dumps({"token": token, "user": user_json(user)},
+                                   sort_keys=True) + "\n",
+                        cors_origin=origin)
+        self._log(HTTPStatus.CREATED)
+
+    def _auth_login(self, origin) -> None:
+        accounts = self._require_account_store(origin)
+        if accounts is None:
+            return
+        payload = self._auth_json_body(origin)
+        if payload is None:
+            return
+        email = payload.get("email")
+        password = payload.get("password")
+        user = None
+        if isinstance(email, str) and isinstance(password, str):
+            user = accounts.authenticate(email, password)
+        if user is None:
+            # One generic message: no account enumeration.
+            self._auth_error(HTTPStatus.UNAUTHORIZED, "Wrong email or password.",
+                             origin)
+            return
+        token = accounts.issue_session(user.id)
+        self._send_json(HTTPStatus.OK,
+                        json.dumps({"token": token, "user": user_json(user)},
+                                   sort_keys=True) + "\n",
+                        cors_origin=origin)
+        self._log(HTTPStatus.OK)
+
+    def _auth_logout(self, origin) -> None:
+        accounts = self._require_account_store(origin)
+        if accounts is None:
+            return
+        token = self._bearer_token()
+        user = accounts.validate_session(token) if token else None
+        if user is None:
+            self._auth_error(HTTPStatus.UNAUTHORIZED, "Please sign in.", origin)
+            return
+        accounts.revoke_session(token)
+        self._send_empty(HTTPStatus.NO_CONTENT, cors_origin=origin)
+        self._log(HTTPStatus.NO_CONTENT)
+
+    def _auth_me(self, origin) -> None:
+        accounts = self._require_account_store(origin)
+        if accounts is None:
+            return
+        token = self._bearer_token()
+        user = accounts.validate_session(token) if token else None
+        if user is None:
+            self._auth_error(HTTPStatus.UNAUTHORIZED, "Please sign in.", origin)
+            return
+        self._send_json(HTTPStatus.OK,
+                        json.dumps({"user": user_json(user)}, sort_keys=True)
+                        + "\n",
+                        cors_origin=origin)
+        self._log(HTTPStatus.OK)
 
     def _cors_origin(self) -> str | None:
         origin = self.headers.get("Origin")
@@ -229,14 +435,19 @@ class _ApiHandler(http.server.BaseHTTPRequestHandler):
 
     def do_OPTIONS(self) -> None:
         origin = self._cors_origin()
-        if self.path != "/api/draft":
+        is_auth = self.path.startswith("/api/auth/")
+        if not is_auth and self.path != "/api/draft":
             self._send_json(HTTPStatus.NOT_FOUND, '{"error": "not found"}\n')
             return
+        # Route-aware preflight: only the auth routes may send Authorization.
+        allow_headers = ("Content-Type, Authorization" if is_auth
+                         else "Content-Type")
+        allow_methods = "GET, POST, OPTIONS" if is_auth else "POST, OPTIONS"
         self.send_response(HTTPStatus.NO_CONTENT)
         if origin:
             self.send_header("Access-Control-Allow-Origin", origin)
-        self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.send_header("Access-Control-Allow-Methods", allow_methods)
+        self.send_header("Access-Control-Allow-Headers", allow_headers)
         self.send_header("Access-Control-Max-Age", "600")
         self.send_header("Content-Length", "0")
         self.end_headers()
@@ -249,15 +460,21 @@ class _ApiHandler(http.server.BaseHTTPRequestHandler):
                             cors_origin=self._cors_origin())
             self._log(HTTPStatus.OK)
             return
+        if self.path == "/api/auth/me":
+            self._auth_me(self._cors_origin())
+            return
         self._send_json(HTTPStatus.NOT_FOUND, '{"error": "not found"}\n')
         self._log(HTTPStatus.NOT_FOUND)
 
     def do_POST(self) -> None:
+        origin = self._cors_origin()
+        if self.path.startswith("/api/auth/"):
+            self._handle_auth_post(origin)
+            return
         if self.path != "/api/draft":
             self._send_json(HTTPStatus.NOT_FOUND, '{"error": "not found"}\n')
             self._log(HTTPStatus.NOT_FOUND)
             return
-        origin = self._cors_origin()
         try:
             length = int(self.headers.get("Content-Length", "0"))
         except ValueError:
@@ -316,7 +533,43 @@ class _ApiHandler(http.server.BaseHTTPRequestHandler):
         pass
 
 
-def make_api_server(host: str, port: int, client) -> http.server.ThreadingHTTPServer:
-    """Build the bridge server; ``client=None`` starts degraded (all 503)."""
-    handler = type("BoundApiHandler", (_ApiHandler,), {"client": client})
+def make_api_server(host: str, port: int, client,
+                    accounts=None) -> http.server.ThreadingHTTPServer:
+    """Build the bridge server.
+
+    ``client=None`` starts degraded (drafts answer 503); ``accounts=None``
+    leaves the auth routes at 503 while everything else is unchanged (§13).
+    """
+    handler = type("BoundApiHandler", (_ApiHandler,),
+                   {"client": client, "accounts": accounts,
+                    "signup_attempts": {}})
     return http.server.ThreadingHTTPServer((host, port), handler)
+
+
+def _validate_signup(payload: dict) -> tuple[str, str, str]:
+    """Validate a signup body; strings mirror the SPA verbatim (§11/§13)."""
+    name = payload.get("name")
+    if not isinstance(name, str) or not name.strip():
+        raise _RequestError(HTTPStatus.BAD_REQUEST, "Please enter your name.")
+    if len(name) > CAPS["MAX_NAME_CHARS"]:
+        raise _RequestError(HTTPStatus.BAD_REQUEST,
+                            _caps_error("MAX_NAME_CHARS"))
+    raw_email = payload.get("email")
+    if not isinstance(raw_email, str):
+        raise _RequestError(HTTPStatus.BAD_REQUEST,
+                            "Please enter a valid email address.")
+    email = raw_email.strip().lower()
+    if len(email) > CAPS["MAX_EMAIL_CHARS"]:
+        raise _RequestError(HTTPStatus.BAD_REQUEST,
+                            _caps_error("MAX_EMAIL_CHARS"))
+    if not _EMAIL_RE.match(email):
+        raise _RequestError(HTTPStatus.BAD_REQUEST,
+                            "Please enter a valid email address.")
+    password = payload.get("password")
+    if not isinstance(password, str) or len(password) < 8:
+        raise _RequestError(HTTPStatus.BAD_REQUEST,
+                            "Password must be at least 8 characters.")
+    if len(password) > CAPS["MAX_PASSWORD_CHARS"]:
+        raise _RequestError(HTTPStatus.BAD_REQUEST,
+                            _caps_error("MAX_PASSWORD_CHARS"))
+    return name.strip(), email, password
